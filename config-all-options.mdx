@@ -1,0 +1,2843 @@
+---
+title: "All Options"
+---
+
+Provided below are working, documented YAML configs for each BuildBuddy binary containing every option that that binary accepts, each set to the default value for that option. Any option that can be specified in the YAML config can also be passed on the command line. For nested options, be sure to write out the full YAML path, with a `.` separating each part.
+
+For example:
+
+```
+storage:
+    disk:
+        root_directory: /tmp/buildbuddy
+
+```
+
+becomes:
+
+```
+buildbuddy -storage.disk.root_directory="/tmp/buildbuddy"
+
+```
+
+For specifying lists of structures using flags on the command line, use the JSON representation of the list you wish to concatenate to the end or the element you wish to append:
+
+For example, given the following schema:
+
+```
+cache:
+    disk:
+        partitions: [] # type: []disk.Partition
+        # e.g.:
+        # - id: "" # type: string
+        #   max_size_bytes: 0 # type: int
+
+```
+
+We see that `cache.disk.partitions` is configured as a list of `disk.Partition`. In YAML, we'd normally configure it like this:
+
+```
+cache:
+    disk:
+        partitions:
+        - id: "1GB"
+          max_size_bytes: 1073741824
+        - id: "2GB"
+          max_size_bytes: 2147483648
+
+```
+
+The flag equivalent of this example would be:
+
+```
+buildbuddy -cache.disk.partitions='{"id": "1GB", "max_size_bytes": 1073741824}' -cache.disk.partitions='{"id": "2GB", "max_size_bytes": 2147483648}'
+
+```
+
+or
+
+```
+buildbuddy -cache.disk.partitions='[{"id": "1GB", "max_size_bytes": 1073741824}, {"id": "2GB", "max_size_bytes": 2147483648}]'
+
+```
+
+### BuildBuddy Server (FOSS)[](#buildbuddy-server-foss "Direct link to BuildBuddy Server (FOSS)")
+
+```
+# Unstructured settings
+
+# app_directory (string): the directory containing app binary files to host
+app_directory: ""
+# auto_migrate_db (bool): If true, attempt to automigrate the db when 
+# connecting
+auto_migrate_db: true
+# auto_migrate_db_and_exit (bool): If true, attempt to automigrate the db when 
+# connecting, then exit the program.
+auto_migrate_db_and_exit: false
+# cache_stats_finalization_delay (time.Duration): The time allowed for all 
+# metrics collectors across all apps to flush their local cache stats to the 
+# backing storage, before finalizing stats in the DB.
+cache_stats_finalization_delay: 500ms
+# cleanup_interval (time.Duration): How often the janitor cleanup tasks will 
+# run
+cleanup_interval: 10m0s
+# cleanup_workers (int): How many cleanup tasks to run
+cleanup_workers: 1
+# disable_ga (bool): If true; ga will be disabled
+disable_ga: false
+# disable_telemetry (bool): If true; telemetry will be disabled
+disable_telemetry: false
+# drop_invocation_pk_cols (bool): If true, attempt to drop invocation PK cols
+drop_invocation_pk_cols: false
+# exit_when_ready (bool): If set, the app will exit as soon as it becomes 
+# ready (useful for migrations)
+exit_when_ready: false
+# grpc_client_origin_header (string): Header value to set for 
+# x-buildbuddy-origin.
+grpc_client_origin_header: ""
+# grpc_port (int): The port to listen for gRPC traffic on
+grpc_port: 1985
+# grpcs_port (int): The port to listen for gRPCS traffic on
+grpcs_port: 1986
+# internal_grpc_port (int): The port to listen for internal gRPC traffic on
+internal_grpc_port: 1987
+# internal_grpcs_port (int): The port to listen for internal gRPCS traffic on
+internal_grpcs_port: 1988
+# internal_http_port (int): The port to listen for internal HTTP traffic
+internal_http_port: 0
+# js_entry_point_path (string): Absolute URL path of the app JS entry point
+js_entry_point_path: /app/app_bundle/app.js?hash={APP_BUNDLE_HASH}
+# listen (string): The interface to listen on (default: 0.0.0.0)
+listen: 0.0.0.0
+# log_deletion_errors (bool): If true; log errors when ttl-deleting expired 
+# data
+log_deletion_errors: false
+# log_goroutine_profile_on_shutdown (bool): Whether to log all goroutine stack 
+# traces on shutdown.
+log_goroutine_profile_on_shutdown: false
+# max_shutdown_duration (time.Duration): Time to wait for shutdown
+max_shutdown_duration: 25s
+# migrate_disk_cache_to_v2_and_exit (bool): If true, attempt to migrate disk 
+# cache to v2 layout.
+migrate_disk_cache_to_v2_and_exit: false
+# monitoring_port (int): The port to listen for monitoring traffic on
+monitoring_port: 9090
+# port (int): The port to listen for HTTP traffic on
+port: 8080
+# report_not_ready (bool): If set to true, the app will always report as being 
+# unready.
+report_not_ready: false
+# server_type (string): The server type to match on health checks
+server_type: buildbuddy-server
+# shutdown_lameduck_duration (time.Duration): If set, the server will be 
+# marked unready but not run shutdown functions until this period passes.
+shutdown_lameduck_duration: 0s
+# ssl_port (int): The port to listen for HTTPS traffic on
+ssl_port: 8081
+# static_directory (string): the directory containing static files to host
+static_directory: ""
+# telemetry_endpoint (string): The telemetry endpoint to use
+telemetry_endpoint: grpcs://t.buildbuddy.io:443
+# telemetry_interval (time.Duration): How often telemetry data will be 
+# reported
+telemetry_interval: 24h0m0s
+# verbose_telemetry_client (bool): If true; print telemetry client information
+verbose_telemetry_client: false
+
+# Structured settings
+
+api:
+    # api.api_key (string): The default API key to use for on-prem enterprise 
+    # deploys with a single organization/group. **DEPRECATED** Manual API key 
+    # specification is no longer supported; to retrieve specific API keys 
+    # programmatically, please use the API key table. This field will still 
+    # specify an API key to redact in case a manual API key was specified when 
+    # buildbuddy was first set up.
+    api_key: ""
+app:
+    # app.admin_only_create_group (bool): If true, only admins of an existing 
+    # group can create a new groups.
+    admin_only_create_group: false
+    # app.audit_logs_enabled (bool): Whether to log administrative events to 
+    # an audit log. Requires OLAP database to be configured.
+    audit_logs_enabled: false
+    # app.audit_logs_ui_enabled (bool): If set, the audit logs UI will be 
+    # accessible from the sidebar.
+    audit_logs_ui_enabled: false
+    # app.build_buddy_url (URL): The external URL where your BuildBuddy 
+    # instance can be found.
+    build_buddy_url: http://localhost:8080
+    # app.cache_api_url (URL): Overrides the default remote cache protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    cache_api_url: ""
+    # app.code_editor_enabled (bool): If set, code editor functionality will 
+    # be enabled.
+    code_editor_enabled: false
+    # app.customer_managed_encryption_keys_enabled (bool): If set, show 
+    # customer-managed encryption configuration UI.
+    customer_managed_encryption_keys_enabled: false
+    # app.default_subdomains ([]string): List of subdomains that should not be 
+    # handled as user-owned subdomains.
+    default_subdomains: []
+    # app.default_to_dense_mode (bool): Enables the dense UI mode by default.
+    default_to_dense_mode: false
+    # app.disable_cert_config (bool): If true, the certificate based auth 
+    # option will not be shown in the config widget.
+    disable_cert_config: false
+    # app.enable_grpc_metrics_by_group_id (bool): If enabled, grpc metrics by 
+    # group ID will be recorded
+    enable_grpc_metrics_by_group_id: false
+    # app.enable_prometheus_histograms (bool): If true, collect prometheus 
+    # histograms for all RPCs
+    enable_prometheus_histograms: true
+    # app.enable_read_target_statuses_from_olap_db (bool): If enabled, read 
+    # target statuses from OLAP DB
+    enable_read_target_statuses_from_olap_db: false
+    # app.enable_structured_logging (bool): If true, log messages will be 
+    # json-formatted.
+    enable_structured_logging: false
+    # app.enable_subdomain_matching (bool): If true, request subdomain will be 
+    # taken into account when determining what request restrictions should be 
+    # applied.
+    enable_subdomain_matching: false
+    # app.enable_target_tracking (bool): Cloud-Only
+    enable_target_tracking: false
+    # app.enable_write_executions_to_olap_db (bool): If enabled, complete 
+    # Executions will be flushed to OLAP DB
+    enable_write_executions_to_olap_db: false
+    # app.enable_write_test_target_statuses_to_olap_db (bool): If enabled, 
+    # test target statuses will be flushed to OLAP DB
+    enable_write_test_target_statuses_to_olap_db: false
+    # app.enable_write_to_olap_db (bool): If enabled, complete invocations 
+    # will be flushed to OLAP DB
+    enable_write_to_olap_db: true
+    # app.events_api_url (URL): Overrides the default build event protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    events_api_url: ""
+    # app.execution_search_enabled (bool): If set, fetch lists of executions 
+    # from the OLAP DB in the trends UI.
+    execution_search_enabled: true
+    # app.expanded_suggestions_enabled (bool): If set, enable more build 
+    # suggestions in the UI.
+    expanded_suggestions_enabled: false
+    # app.grpc_max_recv_msg_size_bytes (int): Configures the max GRPC receive 
+    # message size [bytes]
+    grpc_max_recv_msg_size_bytes: 50000000
+    # app.grpc_over_http_port_enabled (bool): Cloud-Only
+    grpc_over_http_port_enabled: false
+    # app.ignore_forced_tracing_header (bool): If set, we will not honor the 
+    # forced tracing header.
+    ignore_forced_tracing_header: false
+    # app.ip_rules_ui_enabled (bool): If set, show the IP rules tab in 
+    # settings page.
+    ip_rules_ui_enabled: false
+    # app.log_enable_gcp_logging_format (bool): If true, the output structured 
+    # logs will be compatible with format expected by GCP Logging.
+    log_enable_gcp_logging_format: false
+    # app.log_error_stack_traces (bool): If true, stack traces will be printed 
+    # for errors that have them.
+    log_error_stack_traces: false
+    # app.log_gcp_log_id (string): The log ID to log to in GCP (if any).
+    log_gcp_log_id: ""
+    # app.log_gcp_project_id (string): The project ID to log to in GCP (if 
+    # any).
+    log_gcp_project_id: ""
+    # app.log_include_short_file_name (bool): If true, log messages will 
+    # include shortened originating file name.
+    log_include_short_file_name: false
+    # app.log_level (string): The desired log level. Logs with a level >= this 
+    # level will be emitted. One of {'fatal', 'error', 'warn', 'info', 
+    # 'debug'}
+    log_level: info
+    # app.new_trends_ui_enabled (bool): If set, show a new trends UI with a 
+    # bit more organization.
+    new_trends_ui_enabled: false
+    # app.paginate_invocations (bool): If true, paginate invocations returned 
+    # to the UI.
+    paginate_invocations: true
+    # app.pattern_filter_enabled (bool): If set, allow filtering by pattern in 
+    # the client.
+    pattern_filter_enabled: true
+    # app.remote_execution_api_url (URL): Overrides the default remote 
+    # execution protocol gRPC address shown by BuildBuddy on the configuration 
+    # screen.
+    remote_execution_api_url: ""
+    # app.tags_enabled (bool): Enable setting tags on invocations via 
+    # build_metadata
+    tags_enabled: false
+    # app.tags_ui_enabled (bool): If set, expose tags data and let users 
+    # filter by tag.
+    tags_ui_enabled: false
+    # app.test_grid_v2_enabled (bool): Whether to enable test grid V2
+    test_grid_v2_enabled: true
+    # app.test_output_manifests_enabled (bool): If set, the target page will 
+    # render the contents of test output zips.
+    test_output_manifests_enabled: true
+    # app.timeseries_charts_in_timing_profile_enabled (bool): If set, charts 
+    # with sampled time series data (such as CPU and memory usage) will be 
+    # shown
+    timeseries_charts_in_timing_profile_enabled: true
+    # app.trace_fraction (float64): Fraction of requests to sample for 
+    # tracing.
+    trace_fraction: 0
+    # app.trace_fraction_overrides ([]string): Tracing fraction override based 
+    # on name in format name=fraction.
+    trace_fraction_overrides: []
+    # app.trace_jaeger_collector (string): Address of the Jager collector 
+    # endpoint where traces will be sent.
+    trace_jaeger_collector: ""
+    # app.trace_project_id (string): Optional GCP project ID to export traces 
+    # to. If not specified, determined from default credentials or metadata 
+    # server if running on GCP.
+    trace_project_id: ""
+    # app.trace_service_name (string): Name of the service to associate with 
+    # traces.
+    trace_service_name: ""
+    # app.trends_heatmap_enabled (bool): If set, enable a fancy heatmap UI for 
+    # exploring build trends.
+    trends_heatmap_enabled: true
+    # app.trends_range_selection (bool): If set, let users drag to select time 
+    # ranges in the trends UI.
+    trends_range_selection: false
+    # app.trends_summary_enabled (bool): If set, show the new 'summary' 
+    # section at the top of the trends UI.
+    trends_summary_enabled: false
+    # app.usage_enabled (bool): If set, the usage page will be enabled in the 
+    # UI.
+    usage_enabled: false
+    # app.user_management_enabled (bool): If set, the user management page 
+    # will be enabled in the UI.
+    user_management_enabled: true
+    # app.workflow_history_enabled (bool): If set, information about past 
+    # action runs for workflows will be shown on the workflows page.
+    workflow_history_enabled: true
+auth:
+    # auth.domain_wide_cookies (bool): If true, cookies will have domain set 
+    # so that they are accessible on domain and all subdomains.
+    domain_wide_cookies: false
+    # auth.https_only_cookies (bool): If true, cookies will only be set over 
+    # https connections.
+    https_only_cookies: false
+    # auth.jwt_duration (time.Duration): Maximum lifetime of the generated 
+    # JWT.
+    jwt_duration: 6h0m0s
+    # auth.jwt_key (string): The key to use when signing JWT tokens.
+    jwt_key: set_the_jwt_in_config
+build_event_proxy:
+    # build_event_proxy.buffer_size (int): The number of build events to 
+    # buffer locally when proxying build events.
+    buffer_size: 100
+    # build_event_proxy.hosts ([]string): The list of hosts to pass build 
+    # events onto.
+    hosts: []
+cache:
+    client:
+        # cache.client.enable_upload_compression (bool): If true, enable 
+        # compression of uploads to remote caches
+        enable_upload_compression: true
+    # cache.detailed_stats_enabled (bool): Whether to enable detailed stats 
+    # recording for all cache requests.
+    detailed_stats_enabled: false
+    # cache.directory_sizes_enabled (bool): If true, enable an RPC that 
+    # computes the cumulative size of directories stored in the cache.
+    directory_sizes_enabled: false
+    disk:
+        # cache.disk.partition_mappings ([]disk.PartitionMapping)
+        partition_mappings: []
+        # For example:
+        # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+
+        # cache.disk.partitions ([]disk.Partition)
+        partitions: []
+        # For example:
+        # - id: "" # The ID of the partition. (type: string)
+        #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+
+        # cache.disk.root_directory (string): The root directory to store all 
+        # blobs in, if using disk based storage.
+        root_directory: ""
+        # cache.disk.use_v2_layout (bool): If enabled, files will be stored 
+        # using the v2 layout. See disk_cache.MigrateToV2Layout for a 
+        # description.
+        use_v2_layout: false
+    # cache.enable_tree_caching (bool): If true, cache GetTree responses (full 
+    # and partial)
+    enable_tree_caching: true
+    # cache.in_memory (bool): Whether or not to use the in_memory cache.
+    in_memory: false
+    # cache.max_size_bytes (int64): How big to allow the cache to be (in 
+    # bytes).
+    max_size_bytes: 10000000000
+    # cache.max_tree_cache_set_duration (time.Duration): The max amount of 
+    # time to wait for unfinished tree cache entries to be set.
+    max_tree_cache_set_duration: 1s
+    # cache.tree_cache_min_descendents (int): The min number of descendents a 
+    # node must parent in order to be cached
+    tree_cache_min_descendents: 3
+    # cache.tree_cache_min_level (int): The min level at which the tree may be 
+    # cached. 0 is the root
+    tree_cache_min_level: 1
+    # cache.tree_cache_seed (string): If set, hash this with digests before 
+    # caching / reading from tree cache
+    tree_cache_seed: treecache-03011023
+    # cache.zstd_transcoding_enabled (bool): Whether to accept requests to 
+    # read/write zstd-compressed blobs, compressing/decompressing 
+    # outgoing/incoming blobs on the fly.
+    zstd_transcoding_enabled: true
+database:
+    # database.advanced_data_source (db.AdvancedConfig): Alternative to the 
+    # database.data_source flag that allows finer control over database 
+    # settings as well as allowing use of AWS IAM credentials. For most users, 
+    # database.data_source is a simpler configuration method.
+    advanced_data_source:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.advanced_read_replica (db.AdvancedConfig): Advanced alternative 
+    # to database.read_replica. Refer to database.advanced for more 
+    # information.
+    advanced_read_replica:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.conn_max_lifetime_seconds (int): The maximum lifetime of a 
+    # connection to the db
+    conn_max_lifetime_seconds: 0
+    # database.data_source (string): The SQL database to connect to, specified 
+    # as a connection string.
+    data_source: sqlite3:///tmp/buildbuddy.db
+    # database.log_queries (bool): If true, log all queries
+    log_queries: false
+    # database.max_idle_conns (int): The maximum number of idle connections to 
+    # maintain to the db
+    max_idle_conns: 0
+    # database.max_open_conns (int): The maximum number of open connections to 
+    # maintain to the db
+    max_open_conns: 0
+    # database.print_schema_changes_and_exit (bool): If set, print schema 
+    # changes from auto-migration, then exit the program.
+    print_schema_changes_and_exit: false
+    # database.read_replica (string): A secondary, read-only SQL database to 
+    # connect to, specified as a connection string.
+    read_replica: ""
+    # database.slow_query_threshold (time.Duration): Queries longer than this 
+    # duration will be logged with a 'Slow SQL' warning.
+    slow_query_threshold: 500ms
+    # database.stats_poll_interval (time.Duration): How often to poll the DB 
+    # client for connection stats (default: '5s').
+    stats_poll_interval: 5s
+executor:
+    # executor.host_id (string): Optional: Allows for manual specification of 
+    # an executor's host id. If not set, a random UUID will be used.
+    host_id: ""
+github:
+    # github.access_token (string): The GitHub access token used to post 
+    # GitHub commit statuses. ** Enterprise only **
+    access_token: ""
+    app:
+        # github.app.client_id (string): GitHub app OAuth client ID.
+        client_id: ""
+        # github.app.client_secret (string): GitHub app OAuth client secret.
+        client_secret: ""
+        # github.app.enabled (bool): Whether to enable the BuildBuddy GitHub 
+        # app server.
+        enabled: false
+        # github.app.id (string): GitHub app ID.
+        id: ""
+        # github.app.private_key (string): GitHub app private key.
+        private_key: ""
+        # github.app.public_link (string): GitHub app installation URL.
+        public_link: ""
+        # github.app.webhook_secret (string): GitHub app webhook secret used 
+        # to verify that webhook payload contents were sent by GitHub.
+        webhook_secret: ""
+    # github.client_id (string): The client ID of your GitHub Oauth App. ** 
+    # Enterprise only **
+    client_id: ""
+    # github.client_secret (string): The client secret of your GitHub Oauth 
+    # App. ** Enterprise only **
+    client_secret: ""
+    # github.jwt_key (string): The key to use when signing JWT tokens for 
+    # github auth.
+    jwt_key: ""
+    # github.status_name_suffix (string): Suffix to be appended to all 
+    # reported GitHub status names. Useful for differentiating BuildBuddy 
+    # deployments. For example: '(dev)' ** Enterprise only **
+    status_name_suffix: ""
+    # github.status_per_test_target (bool): If true, report status per test 
+    # target. ** Enterprise only **
+    status_per_test_target: false
+integrations:
+    invocation_upload:
+        # integrations.invocation_upload.enabled (bool): Whether to upload 
+        # webhook data to the webhook URL configured per-Group. ** Enterprise 
+        # only **
+        enabled: false
+        # integrations.invocation_upload.gcs_credentials (string): Credentials 
+        # JSON for the Google service account used to authenticate when GCS is 
+        # used as the invocation upload target. ** Enterprise only **
+        gcs_credentials: ""
+    slack:
+        # integrations.slack.webhook_url (string): A Slack webhook url to post 
+        # build update messages to.
+        webhook_url: ""
+monitoring:
+    basic_auth:
+        # monitoring.basic_auth.password (string): Optional password for basic 
+        # auth on the monitoring port.
+        password: ""
+        # monitoring.basic_auth.username (string): Optional username for basic 
+        # auth on the monitoring port.
+        username: ""
+olap_database:
+    # olap_database.cluster_name (string): The cluster name of the database
+    cluster_name: '{cluster}'
+    # olap_database.enable_data_replication (bool): If true, data replication 
+    # is enabled.
+    enable_data_replication: false
+    # olap_database.replica_name (string): The replica name of the table in 
+    # zookeeper
+    replica_name: '{replica}'
+    # olap_database.zoo_path (string): The path to the table name in 
+    # zookeeper, used to set up data replication
+    zoo_path: /clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}
+remote_execution:
+    # remote_execution.enable_executor_key_creation (bool): If enabled, UI 
+    # will allow executor keys to be created.
+    enable_executor_key_creation: false
+    # remote_execution.enable_remote_exec (bool): If true, enable remote-exec. 
+    # ** Enterprise only **
+    enable_remote_exec: true
+    # remote_execution.enable_user_owned_executors (bool): If enabled, users 
+    # can register their own executors with the scheduler.
+    enable_user_owned_executors: false
+    # remote_execution.enable_workflows (bool): Whether to enable BuildBuddy 
+    # workflows.
+    enable_workflows: false
+    # remote_execution.force_user_owned_darwin_executors (bool): If enabled, 
+    # darwin actions will always run on user-owned executors.
+    force_user_owned_darwin_executors: false
+ssl:
+    # ssl.cert_file (string): Path to a PEM encoded certificate file to use 
+    # for TLS if not using ACME.
+    cert_file: ""
+    # ssl.client_ca_cert (string): PEM encoded certificate authority used to 
+    # issue client certificates for mTLS auth.
+    client_ca_cert: ""
+    # ssl.client_ca_cert_file (string): Path to a PEM encoded certificate 
+    # authority file used to issue client certificates for mTLS auth.
+    client_ca_cert_file: ""
+    # ssl.client_ca_key (string): PEM encoded certificate authority key used 
+    # to issue client certificates for mTLS auth.
+    client_ca_key: ""
+    # ssl.client_ca_key_file (string): Path to a PEM encoded certificate 
+    # authority key file used to issue client certificates for mTLS auth.
+    client_ca_key_file: ""
+    # ssl.client_cert_lifespan (time.Duration): The duration client 
+    # certificates are valid for. Ex: '730h' for one month. If not set, 
+    # defaults to 100 years.
+    client_cert_lifespan: 876000h0m0s
+    # ssl.default_host (string): Host name to use for ACME generated cert if 
+    # TLS request does not contain SNI.
+    default_host: ""
+    # ssl.enable_ssl (bool): Whether or not to enable SSL/TLS on gRPC 
+    # connections (gRPCS).
+    enable_ssl: false
+    # ssl.host_whitelist ([]string): Cloud-Only
+    host_whitelist: []
+    # ssl.key_file (string): Path to a PEM encoded key file to use for TLS if 
+    # not using ACME.
+    key_file: ""
+    # ssl.self_signed (bool): If true, a self-signed cert will be generated 
+    # for TLS termination.
+    self_signed: false
+    # ssl.upgrade_insecure (bool): True if http requests should be redirected 
+    # to https. Assumes http traffic is served on port 80 and https traffic is 
+    # served on port 443 (typically via an ingress / load balancer).
+    upgrade_insecure: false
+    # ssl.use_acme (bool): Whether or not to automatically configure SSL certs 
+    # using ACME. If ACME is enabled, cert_file and key_file should not be 
+    # set.
+    use_acme: false
+storage:
+    aws_s3:
+        # storage.aws_s3.bucket (string): The AWS S3 bucket to store files in.
+        bucket: ""
+        # storage.aws_s3.credentials_profile (string): A custom credentials 
+        # profile to use.
+        credentials_profile: ""
+        # storage.aws_s3.disable_ssl (bool): Disables the use of SSL, useful 
+        # for configuring the use of MinIO. **DEPRECATED** Specify a non-HTTPS 
+        # endpoint instead.
+        disable_ssl: false
+        # storage.aws_s3.endpoint (string): The AWS endpoint to use, useful 
+        # for configuring the use of MinIO.
+        endpoint: ""
+        # storage.aws_s3.region (string): The AWS region.
+        region: ""
+        # storage.aws_s3.role_arn (string): The role ARN to use for web 
+        # identity auth.
+        role_arn: ""
+        # storage.aws_s3.role_session_name (string): The role session name to 
+        # use for web identity auth.
+        role_session_name: ""
+        # storage.aws_s3.s3_force_path_style (bool): Force path style urls for 
+        # objects, useful for configuring the use of MinIO.
+        s3_force_path_style: false
+        # storage.aws_s3.static_credentials_id (string): Static credentials ID 
+        # to use, useful for configuring the use of MinIO.
+        static_credentials_id: ""
+        # storage.aws_s3.static_credentials_secret (string): Static 
+        # credentials secret to use, useful for configuring the use of MinIO.
+        static_credentials_secret: ""
+        # storage.aws_s3.static_credentials_token (string): Static credentials 
+        # token to use, useful for configuring the use of MinIO.
+        static_credentials_token: ""
+        # storage.aws_s3.web_identity_token_file (string): The file path to 
+        # the web identity token file.
+        web_identity_token_file: ""
+    azure:
+        # storage.azure.account_key (string): The key for the Azure storage 
+        # account
+        account_key: ""
+        # storage.azure.account_name (string): The name of the Azure storage 
+        # account
+        account_name: ""
+        # storage.azure.container_name (string): The name of the Azure storage 
+        # container
+        container_name: ""
+    # storage.chunk_file_size_bytes (int): How many bytes to buffer in memory 
+    # before flushing a chunk of build protocol data to disk.
+    chunk_file_size_bytes: 3000000
+    # storage.cleanup_batch_size (int): How many invocations to delete in each 
+    # janitor cleanup task
+    cleanup_batch_size: 10
+    # storage.disable_persist_cache_artifacts (bool): If disabled, buildbuddy 
+    # will not persist cache artifacts in the blobstore. This may make older 
+    # invocations not diaplay properly.
+    disable_persist_cache_artifacts: false
+    disk:
+        # storage.disk.root_directory (string): The root directory to store 
+        # all blobs in, if using disk based storage.
+        root_directory: /tmp/buildbuddy
+        # storage.disk.use_v2_layout (bool): If enabled, files will be stored 
+        # using the v2 layout. See disk_cache.MigrateToV2Layout for a 
+        # description.
+        use_v2_layout: false
+    # storage.enable_chunked_event_logs (bool): If true, Event logs will be 
+    # stored separately from the invocation proto in chunks.
+    enable_chunked_event_logs: false
+    execution:
+        # storage.execution.cleanup_batch_size (int): How many invocations to 
+        # delete in each janitor cleanup task
+        cleanup_batch_size: 200
+        # storage.execution.cleanup_interval (time.Duration): How often the 
+        # janitor cleanup tasks will run
+        cleanup_interval: 5m0s
+        # storage.execution.cleanup_workers (int): How many cleanup tasks to 
+        # run
+        cleanup_workers: 1
+        # storage.execution.ttl (time.Duration): The time, in seconds, to keep 
+        # invocations before deletion. 0 disables invocation deletion.
+        ttl: 0s
+    gcs:
+        # storage.gcs.bucket (string): The name of the GCS bucket to store 
+        # build artifact files in.
+        bucket: ""
+        # storage.gcs.credentials (string): Credentials in JSON format that 
+        # will be used to authenticate to GCS.
+        credentials: ""
+        # storage.gcs.credentials_file (string): A path to a JSON credentials 
+        # file that will be used to authenticate to GCS.
+        credentials_file: ""
+        # storage.gcs.project_id (string): The Google Cloud project ID of the 
+        # project owning the above credentials and GCS bucket.
+        project_id: ""
+    # storage.path_prefix (string): The prefix directory to store all blobs in
+    path_prefix: ""
+    # storage.tempdir (string): Root directory for temporary files. Defaults 
+    # to the OS-specific temp dir.
+    tempdir: /tmp
+    # storage.ttl_seconds (int): The time, in seconds, to keep invocations 
+    # before deletion. 0 disables invocation deletion.
+    ttl_seconds: 0
+
+```
+
+### BuildBuddy Server (Enterprise)[](#buildbuddy-server-enterprise "Direct link to BuildBuddy Server (Enterprise)")
+
+```
+# Unstructured settings
+
+# app_directory (string): the directory containing app binary files to host
+app_directory: ""
+# auto_migrate_db (bool): If true, attempt to automigrate the db when 
+# connecting
+auto_migrate_db: true
+# auto_migrate_db_and_exit (bool): If true, attempt to automigrate the db when 
+# connecting, then exit the program.
+auto_migrate_db_and_exit: false
+# cache_stats_finalization_delay (time.Duration): The time allowed for all 
+# metrics collectors across all apps to flush their local cache stats to the 
+# backing storage, before finalizing stats in the DB.
+cache_stats_finalization_delay: 500ms
+# cleanup_interval (time.Duration): How often the janitor cleanup tasks will 
+# run
+cleanup_interval: 10m0s
+# cleanup_workers (int): How many cleanup tasks to run
+cleanup_workers: 1
+# disable_ga (bool): If true; ga will be disabled
+disable_ga: false
+# disable_telemetry (bool): If true; telemetry will be disabled
+disable_telemetry: false
+# drop_invocation_pk_cols (bool): If true, attempt to drop invocation PK cols
+drop_invocation_pk_cols: false
+# enable_cache_delete_api (bool): If true, enable access to cache delete API.
+enable_cache_delete_api: false
+# exit_when_ready (bool): If set, the app will exit as soon as it becomes 
+# ready (useful for migrations)
+exit_when_ready: false
+# grpc_client_origin_header (string): Header value to set for 
+# x-buildbuddy-origin.
+grpc_client_origin_header: ""
+# grpc_port (int): The port to listen for gRPC traffic on
+grpc_port: 1985
+# grpcs_port (int): The port to listen for gRPCS traffic on
+grpcs_port: 1986
+# internal_grpc_port (int): The port to listen for internal gRPC traffic on
+internal_grpc_port: 1987
+# internal_grpcs_port (int): The port to listen for internal gRPCS traffic on
+internal_grpcs_port: 1988
+# internal_http_port (int): The port to listen for internal HTTP traffic
+internal_http_port: 0
+# js_entry_point_path (string): Absolute URL path of the app JS entry point
+js_entry_point_path: /app/app_bundle/app.js?hash={APP_BUNDLE_HASH}
+# listen (string): The interface to listen on (default: 0.0.0.0)
+listen: 0.0.0.0
+# log_deletion_errors (bool): If true; log errors when ttl-deleting expired 
+# data
+log_deletion_errors: false
+# log_goroutine_profile_on_shutdown (bool): Whether to log all goroutine stack 
+# traces on shutdown.
+log_goroutine_profile_on_shutdown: false
+# max_shutdown_duration (time.Duration): Time to wait for shutdown
+max_shutdown_duration: 25s
+# migrate_disk_cache_to_v2_and_exit (bool): If true, attempt to migrate disk 
+# cache to v2 layout.
+migrate_disk_cache_to_v2_and_exit: false
+# monitoring_port (int): The port to listen for monitoring traffic on
+monitoring_port: 9090
+# port (int): The port to listen for HTTP traffic on
+port: 8080
+# redis_command_buffer_flush_period (time.Duration): How long to wait between 
+# flushing buffered redis commands. Setting this to 0 will disable buffering 
+# at the cost of higher redis QPS.
+redis_command_buffer_flush_period: 250ms
+# report_not_ready (bool): If set to true, the app will always report as being 
+# unready.
+report_not_ready: false
+# server_type (string): The server type to match on health checks
+server_type: buildbuddy-server
+# shutdown_lameduck_duration (time.Duration): If set, the server will be 
+# marked unready but not run shutdown functions until this period passes.
+shutdown_lameduck_duration: 0s
+# ssl_port (int): The port to listen for HTTPS traffic on
+ssl_port: 8081
+# static_directory (string): the directory containing static files to host
+static_directory: ""
+# telemetry_endpoint (string): The telemetry endpoint to use
+telemetry_endpoint: grpcs://t.buildbuddy.io:443
+# telemetry_interval (time.Duration): How often telemetry data will be 
+# reported
+telemetry_interval: 24h0m0s
+# telemetry_port (int): The port on which to listen for telemetry events
+telemetry_port: 9099
+# verbose_telemetry_client (bool): If true; print telemetry client information
+verbose_telemetry_client: false
+# verbose_telemetry_server (bool): If true; print telemetry server information
+verbose_telemetry_server: false
+# zone_override (string): A value that will override the auto-detected zone. 
+# Ignored if empty
+zone_override: ""
+
+# Structured settings
+
+api:
+    # api.api_key (string): The default API key to use for on-prem enterprise 
+    # deploys with a single organization/group. **DEPRECATED** Manual API key 
+    # specification is no longer supported; to retrieve specific API keys 
+    # programmatically, please use the API key table. This field will still 
+    # specify an API key to redact in case a manual API key was specified when 
+    # buildbuddy was first set up.
+    api_key: ""
+    # api.enable_api (bool): Whether or not to enable the BuildBuddy API.
+    enable_api: true
+    # api.enable_cache (bool): Whether or not to enable the API cache.
+    enable_cache: false
+    # api.enable_metrics_api (bool): If true, enable access to metrics API.
+    enable_metrics_api: false
+app:
+    # app.add_user_to_domain_group (bool): Cloud-Only
+    add_user_to_domain_group: false
+    # app.admin_only_create_group (bool): If true, only admins of an existing 
+    # group can create a new groups.
+    admin_only_create_group: false
+    # app.audit_logs_enabled (bool): Whether to log administrative events to 
+    # an audit log. Requires OLAP database to be configured.
+    audit_logs_enabled: false
+    # app.audit_logs_ui_enabled (bool): If set, the audit logs UI will be 
+    # accessible from the sidebar.
+    audit_logs_ui_enabled: false
+    # app.build_buddy_url (URL): The external URL where your BuildBuddy 
+    # instance can be found.
+    build_buddy_url: http://localhost:8080
+    # app.cache_api_url (URL): Overrides the default remote cache protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    cache_api_url: ""
+    client_identity:
+        # app.client_identity.client (string): The client identifier to place 
+        # in the identity header.
+        client: ""
+        # app.client_identity.key (string): The key used to sign and verify 
+        # identity JWTs.
+        key: ""
+        # app.client_identity.origin (string): The origin identifier to place 
+        # in the identity header.
+        origin: ""
+    # app.code_editor_enabled (bool): If set, code editor functionality will 
+    # be enabled.
+    code_editor_enabled: false
+    # app.create_group_per_user (bool): Cloud-Only
+    create_group_per_user: false
+    # app.customer_managed_encryption_keys_enabled (bool): If set, show 
+    # customer-managed encryption configuration UI.
+    customer_managed_encryption_keys_enabled: false
+    # app.default_redis_target (string): A Redis target for storing remote 
+    # shared state. To ease migration, the redis target from the remote 
+    # execution config will be used if this value is not specified.
+    default_redis_target: ""
+    default_sharded_redis:
+        # app.default_sharded_redis.password (string): Redis password
+        password: ""
+        # app.default_sharded_redis.shards ([]string): Ordered list of Redis 
+        # shard addresses.
+        shards: []
+        # app.default_sharded_redis.username (string): Redis username
+        username: ""
+    # app.default_subdomains ([]string): List of subdomains that should not be 
+    # handled as user-owned subdomains.
+    default_subdomains: []
+    # app.default_to_dense_mode (bool): Enables the dense UI mode by default.
+    default_to_dense_mode: false
+    # app.disable_cert_config (bool): If true, the certificate based auth 
+    # option will not be shown in the config widget.
+    disable_cert_config: false
+    # app.enable_execution_trends (bool): If enabled, fill execution trend 
+    # stats in GetTrendResponse
+    enable_execution_trends: true
+    # app.enable_grpc_metrics_by_group_id (bool): If enabled, grpc metrics by 
+    # group ID will be recorded
+    enable_grpc_metrics_by_group_id: false
+    # app.enable_invocation_stat_percentiles (bool): If enabled, provide 
+    # percentile breakdowns for invocation stats in GetTrendResponse
+    enable_invocation_stat_percentiles: true
+    # app.enable_prometheus_histograms (bool): If true, collect prometheus 
+    # histograms for all RPCs
+    enable_prometheus_histograms: true
+    # app.enable_quota_management (bool): If set, quota management will be 
+    # enabled
+    enable_quota_management: false
+    # app.enable_read_from_olap_db (bool): If enabled, read from OLAP DB
+    enable_read_from_olap_db: true
+    # app.enable_read_target_statuses_from_olap_db (bool): If enabled, read 
+    # target statuses from OLAP DB
+    enable_read_target_statuses_from_olap_db: false
+    # app.enable_secret_service (bool): If set, secret service will be enabled
+    enable_secret_service: false
+    # app.enable_structured_logging (bool): If true, log messages will be 
+    # json-formatted.
+    enable_structured_logging: false
+    # app.enable_subdomain_matching (bool): If true, request subdomain will be 
+    # taken into account when determining what request restrictions should be 
+    # applied.
+    enable_subdomain_matching: false
+    # app.enable_target_tracking (bool): Cloud-Only
+    enable_target_tracking: false
+    # app.enable_write_executions_to_olap_db (bool): If enabled, complete 
+    # Executions will be flushed to OLAP DB
+    enable_write_executions_to_olap_db: false
+    # app.enable_write_test_target_statuses_to_olap_db (bool): If enabled, 
+    # test target statuses will be flushed to OLAP DB
+    enable_write_test_target_statuses_to_olap_db: false
+    # app.enable_write_to_olap_db (bool): If enabled, complete invocations 
+    # will be flushed to OLAP DB
+    enable_write_to_olap_db: true
+    # app.events_api_url (URL): Overrides the default build event protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    events_api_url: ""
+    # app.execution_search_enabled (bool): If set, fetch lists of executions 
+    # from the OLAP DB in the trends UI.
+    execution_search_enabled: true
+    # app.expanded_suggestions_enabled (bool): If set, enable more build 
+    # suggestions in the UI.
+    expanded_suggestions_enabled: false
+    # app.fetch_tags_drilldown_data (bool): If enabled, 
+    # DrilldownType_TAG_DRILLDOWN_TYPE can be returned in 
+    # GetStatDrilldownRequests
+    fetch_tags_drilldown_data: true
+    # app.finer_time_buckets (bool): If enabled, split trends and drilldowns 
+    # into smaller time buckets when the user has a smaller date range 
+    # selected.
+    finer_time_buckets: false
+    # app.grpc_max_recv_msg_size_bytes (int): Configures the max GRPC receive 
+    # message size [bytes]
+    grpc_max_recv_msg_size_bytes: 50000000
+    # app.grpc_over_http_port_enabled (bool): Cloud-Only
+    grpc_over_http_port_enabled: false
+    # app.ignore_forced_tracing_header (bool): If set, we will not honor the 
+    # forced tracing header.
+    ignore_forced_tracing_header: false
+    # app.invocation_summary_available_usec (int64): The timstamp when the 
+    # invocation summary is available in the DB
+    invocation_summary_available_usec: 0
+    # app.ip_rules_ui_enabled (bool): If set, show the IP rules tab in 
+    # settings page.
+    ip_rules_ui_enabled: false
+    # app.log_enable_gcp_logging_format (bool): If true, the output structured 
+    # logs will be compatible with format expected by GCP Logging.
+    log_enable_gcp_logging_format: false
+    # app.log_error_stack_traces (bool): If true, stack traces will be printed 
+    # for errors that have them.
+    log_error_stack_traces: false
+    # app.log_gcp_log_id (string): The log ID to log to in GCP (if any).
+    log_gcp_log_id: ""
+    # app.log_gcp_project_id (string): The project ID to log to in GCP (if 
+    # any).
+    log_gcp_project_id: ""
+    # app.log_include_short_file_name (bool): If true, log messages will 
+    # include shortened originating file name.
+    log_include_short_file_name: false
+    # app.log_level (string): The desired log level. Logs with a level >= this 
+    # level will be emitted. One of {'fatal', 'error', 'warn', 'info', 
+    # 'debug'}
+    log_level: info
+    # app.new_trends_ui_enabled (bool): If set, show a new trends UI with a 
+    # bit more organization.
+    new_trends_ui_enabled: false
+    # app.no_default_user_group (bool): Cloud-Only
+    no_default_user_group: false
+    # app.olap_invocation_search_enabled (bool): If true, 
+    # InvocationSearchService will query clickhouse for some queries.
+    olap_invocation_search_enabled: true
+    # app.paginate_invocations (bool): If true, paginate invocations returned 
+    # to the UI.
+    paginate_invocations: true
+    # app.pattern_filter_enabled (bool): If set, allow filtering by pattern in 
+    # the client.
+    pattern_filter_enabled: true
+    # app.region (string): The region in which the app is running.
+    region: ""
+    # app.remote_execution_api_url (URL): Overrides the default remote 
+    # execution protocol gRPC address shown by BuildBuddy on the configuration 
+    # screen.
+    remote_execution_api_url: ""
+    # app.tags_enabled (bool): Enable setting tags on invocations via 
+    # build_metadata
+    tags_enabled: false
+    # app.tags_ui_enabled (bool): If set, expose tags data and let users 
+    # filter by tag.
+    tags_ui_enabled: false
+    # app.test_grid_v2_enabled (bool): Whether to enable test grid V2
+    test_grid_v2_enabled: true
+    # app.test_output_manifests_enabled (bool): If set, the target page will 
+    # render the contents of test output zips.
+    test_output_manifests_enabled: true
+    # app.timeseries_charts_in_timing_profile_enabled (bool): If set, charts 
+    # with sampled time series data (such as CPU and memory usage) will be 
+    # shown
+    timeseries_charts_in_timing_profile_enabled: true
+    # app.trace_fraction (float64): Fraction of requests to sample for 
+    # tracing.
+    trace_fraction: 0
+    # app.trace_fraction_overrides ([]string): Tracing fraction override based 
+    # on name in format name=fraction.
+    trace_fraction_overrides: []
+    # app.trace_jaeger_collector (string): Address of the Jager collector 
+    # endpoint where traces will be sent.
+    trace_jaeger_collector: ""
+    # app.trace_project_id (string): Optional GCP project ID to export traces 
+    # to. If not specified, determined from default credentials or metadata 
+    # server if running on GCP.
+    trace_project_id: ""
+    # app.trace_service_name (string): Name of the service to associate with 
+    # traces.
+    trace_service_name: ""
+    # app.trends_heatmap_enabled (bool): If set, enable a fancy heatmap UI for 
+    # exploring build trends.
+    trends_heatmap_enabled: true
+    # app.trends_range_selection (bool): If set, let users drag to select time 
+    # ranges in the trends UI.
+    trends_range_selection: false
+    # app.trends_summary_enabled (bool): If set, show the new 'summary' 
+    # section at the top of the trends UI.
+    trends_summary_enabled: false
+    # app.usage_enabled (bool): If set, the usage page will be enabled in the 
+    # UI.
+    usage_enabled: false
+    # app.usage_start_date (string): If set, usage data will only be viewable 
+    # on or after this timestamp. Specified in RFC3339 format, like 
+    # 2021-10-01T00:00:00Z
+    usage_start_date: ""
+    # app.usage_tracking_enabled (bool): If set, enable usage data collection.
+    usage_tracking_enabled: false
+    # app.use_timezone_in_heatmap_queries (bool): If enabled, use timezone 
+    # instead of 'timezone offset' to compute day boundaries in heatmap 
+    # queries.
+    use_timezone_in_heatmap_queries: true
+    # app.user_management_enabled (bool): If set, the user management page 
+    # will be enabled in the UI.
+    user_management_enabled: true
+    # app.user_owned_keys_enabled (bool): If true, enable user-owned API keys.
+    user_owned_keys_enabled: false
+    # app.workflow_history_enabled (bool): If set, information about past 
+    # action runs for workflows will be shown on the workflows page.
+    workflow_history_enabled: true
+auth:
+    # auth.admin_group_id (string): ID of a group whose members can perform 
+    # actions only accessible to server admins.
+    admin_group_id: ""
+    api_key_encryption:
+        # auth.api_key_encryption.encrypt_new_keys (bool): If enabled, all new 
+        # API keys will be written in an encrypted format.
+        encrypt_new_keys: false
+        # auth.api_key_encryption.encrypt_old_keys (bool): If enabled, all 
+        # existing unencrypted keys will be encrypted on startup. The 
+        # unencrypted keys will remain in the database and will need to be 
+        # cleared manually after verifying the success of the migration.
+        encrypt_old_keys: false
+        # auth.api_key_encryption.key (string): Base64-encoded 256-bit 
+        # encryption key for API keys.
+        key: ""
+    # auth.api_key_group_cache_ttl (time.Duration): TTL for API Key to Group 
+    # caching. Set to '0' to disable cache.
+    api_key_group_cache_ttl: 5m0s
+    # auth.disable_refresh_token (bool): If true, the offline_access scope 
+    # which requests refresh tokens will not be requested.
+    disable_refresh_token: false
+    # auth.domain_wide_cookies (bool): If true, cookies will have domain set 
+    # so that they are accessible on domain and all subdomains.
+    domain_wide_cookies: false
+    # auth.enable_anonymous_usage (bool): If true, unauthenticated build 
+    # uploads will still be allowed but won't be associated with your 
+    # organization.
+    enable_anonymous_usage: false
+    # auth.enable_self_auth (bool): If true, enables a single user login via 
+    # an oauth provider on the buildbuddy server. Recommend use only when 
+    # server is behind a firewall; this option may allow anyone with access to 
+    # the webpage admin rights to your buildbuddy installation. ** Enterprise 
+    # only **
+    enable_self_auth: false
+    # auth.force_approval (bool): If true, when a user doesn't have a session 
+    # (first time logging in, or manually logged out) force the auth provider 
+    # to show the consent screen allowing the user to select an account if 
+    # they have multiple. This isn't supported by all auth providers.
+    force_approval: false
+    # auth.https_only_cookies (bool): If true, cookies will only be set over 
+    # https connections.
+    https_only_cookies: false
+    ip_rules:
+        # auth.ip_rules.allow_ipv6 (bool): If true, IPv6 rules will be 
+        # allowed.
+        allow_ipv6: false
+        # auth.ip_rules.cache_ttl (time.Duration): Duration of time IP rules 
+        # will be cached in memory.
+        cache_ttl: 5m0s
+        # auth.ip_rules.enable (bool): If true, IP rules will be checked 
+        # during auth.
+        enable: false
+    # auth.jwt_claims_cache_ttl (time.Duration): TTL for JWT string to parsed 
+    # claims caching. Set to '0' to disable cache.
+    jwt_claims_cache_ttl: 15s
+    # auth.jwt_duration (time.Duration): Maximum lifetime of the generated 
+    # JWT.
+    jwt_duration: 6h0m0s
+    # auth.jwt_key (string): The key to use when signing JWT tokens.
+    jwt_key: set_the_jwt_in_config
+    # auth.oauth_providers ([]oidc.OauthProvider): The list of oauth providers 
+    # to use to authenticate.
+    oauth_providers: []
+    # For example:
+    # - issuer_url: "" # The issuer URL of this OIDC Provider. (type: string)
+    #   client_id: "" # The oauth client ID. (type: string)
+    #   client_secret: "" # The oauth client secret. (type: string)
+    #   slug: "" # The slug of this OIDC Provider. (type: string)
+
+    saml:
+        # auth.saml.cert (string): PEM encoded certificate used for SAML auth.
+        cert: ""
+        # auth.saml.cert_file (string): Path to a PEM encoded certificate file 
+        # used for SAML auth.
+        cert_file: ""
+        # auth.saml.key (string): PEM encoded certificate key used for SAML 
+        # auth.
+        key: ""
+        # auth.saml.key_file (string): Path to a PEM encoded certificate key 
+        # file used for SAML auth.
+        key_file: ""
+build_event_proxy:
+    # build_event_proxy.buffer_size (int): The number of build events to 
+    # buffer locally when proxying build events.
+    buffer_size: 100
+    # build_event_proxy.hosts ([]string): The list of hosts to pass build 
+    # events onto.
+    hosts: []
+cache:
+    client:
+        # cache.client.enable_upload_compression (bool): If true, enable 
+        # compression of uploads to remote caches
+        enable_upload_compression: true
+    # cache.detailed_stats_enabled (bool): Whether to enable detailed stats 
+    # recording for all cache requests.
+    detailed_stats_enabled: false
+    # cache.directory_sizes_enabled (bool): If true, enable an RPC that 
+    # computes the cumulative size of directories stored in the cache.
+    directory_sizes_enabled: false
+    disk:
+        # cache.disk.partition_mappings ([]disk.PartitionMapping)
+        partition_mappings: []
+        # For example:
+        # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+
+        # cache.disk.partitions ([]disk.Partition)
+        partitions: []
+        # For example:
+        # - id: "" # The ID of the partition. (type: string)
+        #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+
+        # cache.disk.root_directory (string): The root directory to store all 
+        # blobs in, if using disk based storage.
+        root_directory: ""
+        # cache.disk.use_v2_layout (bool): If enabled, files will be stored 
+        # using the v2 layout. See disk_cache.MigrateToV2Layout for a 
+        # description.
+        use_v2_layout: false
+    distributed_cache:
+        # cache.distributed_cache.cluster_size (int): The total number of 
+        # nodes in this cluster. Required for health checking. ** Enterprise 
+        # only **
+        cluster_size: 0
+        # cache.distributed_cache.enable_local_compression_lookup (bool): If 
+        # enabled, checks the local cache for compression support. If not set, 
+        # distributed compression defaults to off.
+        enable_local_compression_lookup: true
+        # cache.distributed_cache.enable_local_writes (bool): If enabled, 
+        # shortcuts distributed writes that belong to the local shard to local 
+        # cache instead of making an RPC.
+        enable_local_writes: false
+        # cache.distributed_cache.extra_nodes ([]string): The hardcoded list 
+        # of extra nodes to add data too. Useful for migrations. ** Enterprise 
+        # only **
+        extra_nodes: []
+        # cache.distributed_cache.group_name (string): A unique name for this 
+        # distributed cache group. ** Enterprise only **
+        group_name: ""
+        # cache.distributed_cache.listen_addr (string): The address to listen 
+        # for local BuildBuddy distributed cache traffic on.
+        listen_addr: ""
+        # cache.distributed_cache.nodes ([]string): The hardcoded list of peer 
+        # distributed cache nodes. If this is set, redis_target will be 
+        # ignored. ** Enterprise only **
+        nodes: []
+        # cache.distributed_cache.redis_target (string): A redis target for 
+        # improved Caching/RBE performance. Target can be provided as either a 
+        # redis connection URI or a host:port pair. URI schemas supported: 
+        # redis[s]://[[USER][:PASSWORD]@][HOST][:PORT][/DATABASE] or 
+        # unix://[[USER][:PASSWORD]@]SOCKET_PATH[?db=DATABASE] ** Enterprise 
+        # only **
+        redis_target: ""
+        # cache.distributed_cache.replication_factor (int): How many total 
+        # servers the data should be replicated to. Must be >= 1. ** 
+        # Enterprise only **
+        replication_factor: 0
+    # cache.enable_tree_caching (bool): If true, cache GetTree responses (full 
+    # and partial)
+    enable_tree_caching: true
+    gcs:
+        # cache.gcs.bucket (string): The name of the GCS bucket to store cache 
+        # files in.
+        bucket: ""
+        # cache.gcs.credentials_file (string): A path to a JSON credentials 
+        # file that will be used to authenticate to GCS.
+        credentials_file: ""
+        # cache.gcs.project_id (string): The Google Cloud project ID of the 
+        # project owning the above credentials and GCS bucket.
+        project_id: ""
+        # cache.gcs.ttl_days (int64): The period after which cache files 
+        # should be TTLd. Disabled if 0.
+        ttl_days: 0
+    # cache.in_memory (bool): Whether or not to use the in_memory cache.
+    in_memory: false
+    # cache.max_size_bytes (int64): How big to allow the cache to be (in 
+    # bytes).
+    max_size_bytes: 10000000000
+    # cache.max_tree_cache_set_duration (time.Duration): The max amount of 
+    # time to wait for unfinished tree cache entries to be set.
+    max_tree_cache_set_duration: 1s
+    # cache.memcache_targets ([]string): Deprecated. Use Redis Target instead.
+    memcache_targets: []
+    # cache.migration (migration_cache.MigrationConfig): Config to specify the 
+    # details of a cache migration
+    migration:
+        src: null # (type: migration_cache.CacheConfig)
+        # For example:
+        #     disk: null # (type: migration_cache.DiskCacheConfig)
+        #     # For example:
+        #     #     root_directory: "" # (type: string)
+        #     #     partitions: [] # (type: []disk.Partition)
+        #     #     # For example:
+        #     #     # - id: "" # The ID of the partition. (type: string)
+        #     #     #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #     #     #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+        #     #     
+        #     #     partition_mappings: [] # (type: []disk.PartitionMapping)
+        #     #     # For example:
+        #     #     # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #     #     #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #     #     #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+        #     #     
+        #     #     use_v2_layout: false # (type: bool)
+        #     #     
+        #     
+        #     pebble: null # (type: migration_cache.PebbleCacheConfig)
+        #     # For example:
+        #     #     name: "" # (type: string)
+        #     #     root_directory: "" # (type: string)
+        #     #     partitions: [] # (type: []disk.Partition)
+        #     #     # For example:
+        #     #     # - id: "" # The ID of the partition. (type: string)
+        #     #     #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #     #     #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+        #     #     
+        #     #     partition_mappings: [] # (type: []disk.PartitionMapping)
+        #     #     # For example:
+        #     #     # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #     #     #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #     #     #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+        #     #     
+        #     #     max_size_bytes: 0 # (type: int64)
+        #     #     block_cache_size_bytes: 0 # (type: int64)
+        #     #     max_inline_file_size_bytes: 0 # (type: int64)
+        #     #     atime_update_threshold: null # (type: time.Duration)
+        #     #     atime_buffer_size: null # (type: int)
+        #     #     min_eviction_age: null # (type: time.Duration)
+        #     #     min_bytes_auto_zstd_compression: 0 # (type: int64)
+        #     #     average_chunk_size_bytes: 0 # (type: int)
+        #     #     clear_cache_on_startup: false # (type: bool)
+        #     #     
+        #     
+
+        dest: null # (type: migration_cache.CacheConfig)
+        # For example:
+        #     disk: null # (type: migration_cache.DiskCacheConfig)
+        #     # For example:
+        #     #     root_directory: "" # (type: string)
+        #     #     partitions: [] # (type: []disk.Partition)
+        #     #     # For example:
+        #     #     # - id: "" # The ID of the partition. (type: string)
+        #     #     #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #     #     #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+        #     #     
+        #     #     partition_mappings: [] # (type: []disk.PartitionMapping)
+        #     #     # For example:
+        #     #     # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #     #     #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #     #     #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+        #     #     
+        #     #     use_v2_layout: false # (type: bool)
+        #     #     
+        #     
+        #     pebble: null # (type: migration_cache.PebbleCacheConfig)
+        #     # For example:
+        #     #     name: "" # (type: string)
+        #     #     root_directory: "" # (type: string)
+        #     #     partitions: [] # (type: []disk.Partition)
+        #     #     # For example:
+        #     #     # - id: "" # The ID of the partition. (type: string)
+        #     #     #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #     #     #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+        #     #     
+        #     #     partition_mappings: [] # (type: []disk.PartitionMapping)
+        #     #     # For example:
+        #     #     # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #     #     #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #     #     #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+        #     #     
+        #     #     max_size_bytes: 0 # (type: int64)
+        #     #     block_cache_size_bytes: 0 # (type: int64)
+        #     #     max_inline_file_size_bytes: 0 # (type: int64)
+        #     #     atime_update_threshold: null # (type: time.Duration)
+        #     #     atime_buffer_size: null # (type: int)
+        #     #     min_eviction_age: null # (type: time.Duration)
+        #     #     min_bytes_auto_zstd_compression: 0 # (type: int64)
+        #     #     average_chunk_size_bytes: 0 # (type: int)
+        #     #     clear_cache_on_startup: false # (type: bool)
+        #     #     
+        #     
+
+        double_read_percentage: 0 # (type: float64)
+        decompress_percentage: 0 # (type: float64)
+        log_not_found_errors: false # (type: bool)
+        copy_chan_buffer_size: 0 # (type: int)
+        copy_chan_full_warning_interval_min: 0 # (type: int64)
+        max_copies_per_sec: 0 # (type: int)
+        num_copy_workers: 0 # (type: int)
+        async_dest_writes: false # (type: bool)
+    pebble:
+        # cache.pebble.ac_eviction_enabled (bool): Whether AC eviction is 
+        # enabled.
+        ac_eviction_enabled: false
+        # cache.pebble.active_key_version (int64): The key version new data 
+        # will be written with
+        active_key_version: 0
+        # cache.pebble.atime_buffer_size (int): Buffer up to this many atime 
+        # updates in a channel before dropping atime updates
+        atime_buffer_size: 100000
+        # cache.pebble.atime_update_threshold (time.Duration): Don't update 
+        # atime if it was updated more recently than this
+        atime_update_threshold: 10m0s
+        # cache.pebble.average_chunk_size_bytes (int): Average size of chunks 
+        # that's stored in the cache. Disabled if 0.
+        average_chunk_size_bytes: 0
+        # cache.pebble.background_repair_frequency (time.Duration): How 
+        # frequently to run period background repair tasks.
+        background_repair_frequency: 24h0m0s
+        # cache.pebble.background_repair_qps_limit (int): QPS limit for 
+        # background repair modifications.
+        background_repair_qps_limit: 100
+        # cache.pebble.block_cache_size_bytes (int64): How much ram to give 
+        # the block cache
+        block_cache_size_bytes: 1000000000
+        # cache.pebble.copy_partition_data (string): If set, all data will be 
+        # copied from the source partition to the destination partition on 
+        # startup. The cache will not serve data while the copy is in 
+        # progress. Specified in format 
+        # source_partition_id:destination_partition_id,
+        copy_partition_data: ""
+        # cache.pebble.delete_ac_entries_older_than (time.Duration): If set, 
+        # the background repair will delete AC entries older than this time.
+        delete_ac_entries_older_than: 0s
+        # cache.pebble.deletes_per_eviction (int): Maximum number keys to 
+        # delete in one eviction attempt before resampling.
+        deletes_per_eviction: 5
+        # cache.pebble.dir_deletion_delay (time.Duration): How old directories 
+        # must be before being eligible for deletion when empty
+        dir_deletion_delay: 1h0m0s
+        # cache.pebble.eviction_rate_limit (int): Maximum number of entries to 
+        # evict per second (per partition).
+        eviction_rate_limit: 300
+        # cache.pebble.force_calculate_metadata (bool): If set, partition size 
+        # and counts will be calculated even if cached information is 
+        # available.
+        force_calculate_metadata: false
+        # cache.pebble.force_compaction (bool): If set, compact the DB when 
+        # it's created
+        force_compaction: false
+        # cache.pebble.groupid_sampling_enabled (bool): Whether AC entries are 
+        # sampled and exported via metrics. Not yet used for eviction.
+        groupid_sampling_enabled: false
+        # cache.pebble.include_metadata_size (bool): If true, include metadata 
+        # size
+        include_metadata_size: false
+        # cache.pebble.max_inline_file_size_bytes (int64): Files smaller than 
+        # this may be inlined directly into pebble
+        max_inline_file_size_bytes: 1024
+        # cache.pebble.migration_qps_limit (int): QPS limit for data version 
+        # migration
+        migration_qps_limit: 50
+        # cache.pebble.min_bytes_auto_zstd_compression (int64): Blobs larger 
+        # than this will be zstd compressed before written to disk.
+        min_bytes_auto_zstd_compression: 0
+        # cache.pebble.min_eviction_age (time.Duration): Don't evict anything 
+        # unless it's been idle for at least this long
+        min_eviction_age: 6h0m0s
+        # cache.pebble.name (string): The name used in reporting cache metrics 
+        # and status.
+        name: pebble_cache
+        # cache.pebble.num_groupid_samples_on_startup (int): How many group 
+        # IDs to sample to on startup.
+        num_groupid_samples_on_startup: 10
+        # cache.pebble.orphan_delete_dry_run (bool): If set, log orphaned 
+        # files instead of deleting them
+        orphan_delete_dry_run: true
+        # cache.pebble.partition_mappings ([]disk.PartitionMapping)
+        partition_mappings: []
+        # For example:
+        # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+
+        # cache.pebble.partitions ([]disk.Partition)
+        partitions: []
+        # For example:
+        # - id: "" # The ID of the partition. (type: string)
+        #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+
+        # cache.pebble.root_directory (string): The root directory to store 
+        # the database in.
+        root_directory: ""
+        # cache.pebble.sample_pool_size (int): How many deletion candidates to 
+        # maintain between evictions
+        sample_pool_size: 500
+        # cache.pebble.samples_per_eviction (int): How many records to sample 
+        # on each eviction
+        samples_per_eviction: 20
+        # cache.pebble.samples_per_groupid (int): How many samples to use when 
+        # approximating AC item count for groups.
+        samples_per_groupid: 20
+        # cache.pebble.scan_for_missing_files (bool): If set, scan all keys 
+        # and check if external files are missing on disk. Deletes keys with 
+        # missing files.
+        scan_for_missing_files: true
+        # cache.pebble.scan_for_orphaned_files (bool): If true, scan for 
+        # orphaned files
+        scan_for_orphaned_files: false
+        # cache.pebble.warn_about_leaks (bool): If set, warn about leaked DB 
+        # handles
+        warn_about_leaks: true
+    # cache.pebble_groupid_sample_frequency (time.Duration): How often to 
+    # perform a new group ID / approximate count sampling.
+    pebble_groupid_sample_frequency: 5s
+    raft:
+        # cache.raft.atime_buffer_size (int): Buffer up to this many atime 
+        # updates in a channel before dropping atime updates
+        atime_buffer_size: 1000
+        # cache.raft.atime_update_threshold (time.Duration): Don't update 
+        # atime if it was updated more recently than this
+        atime_update_threshold: 10m0s
+        # cache.raft.atime_write_batch_size (int): Buffer this many writes 
+        # before writing atime data
+        atime_write_batch_size: 100
+        # cache.raft.clear_cache_on_startup (bool): If set, remove all raft + 
+        # cache data on start
+        clear_cache_on_startup: false
+        # cache.raft.dead_replica_timeout (time.Duration): After this time, 
+        # consider a node dead
+        dead_replica_timeout: 5m0s
+        # cache.raft.driver_poll_interval (time.Duration): Poll the cluster 
+        # for moves/replacements this often
+        driver_poll_interval: 10s
+        # cache.raft.driver_startup_delay (time.Duration): Don't allow driver 
+        # to propose any changes until this window has passed
+        driver_startup_delay: 1m0s
+        # cache.raft.enable_driver (bool): If true, enable placement driver
+        enable_driver: true
+        # cache.raft.enable_moving_replicas (bool): If set, allow moving 
+        # replicas between nodes
+        enable_moving_replicas: true
+        # cache.raft.enable_replacing_replicas (bool): If set, allow replacing 
+        # dead / down replicas
+        enable_replacing_replicas: true
+        # cache.raft.enable_splitting_replicas (bool): If set, allow splitting 
+        # oversize replicas
+        enable_splitting_replicas: true
+        # cache.raft.grpc_addr (string): The address to listen for internal 
+        # API traffic on. Ex. '1993'
+        grpc_addr: ""
+        # cache.raft.http_addr (string): The address to listen for HTTP raft 
+        # traffic. Ex. '1992'
+        http_addr: ""
+        # cache.raft.join ([]string): The list of nodes to use when joining 
+        # clusters Ex. '1.2.3.4:1991,2.3.4.5:1991...'
+        join: []
+        # cache.raft.listen_addr (string): The address to listen for local 
+        # gossip traffic on. Ex. 'localhost:1991
+        listen_addr: ""
+        # cache.raft.partition_mappings ([]disk.PartitionMapping)
+        partition_mappings: []
+        # For example:
+        # - group_id: "" # The Group ID to which this mapping applies. (type: string)
+        #   prefix: "" # The remote instance name prefix used to select this partition. (type: string)
+        #   partition_id: "" # The partition to use if the Group ID and prefix match. (type: string)
+
+        # cache.raft.partition_usage_delta_bytes_threshold (int): Gossip 
+        # partition usage information if it has changed by more than this 
+        # amount since the last gossip.
+        partition_usage_delta_bytes_threshold: 100000000
+        # cache.raft.partitions ([]disk.Partition)
+        partitions: []
+        # For example:
+        # - id: "" # The ID of the partition. (type: string)
+        #   max_size_bytes: 0 # Maximum size of the partition. (type: int64)
+        #   encryption_supported: false # Whether encrypted data can be stored on this partition. (type: bool)
+
+        # cache.raft.root_directory (string): The root directory to use for 
+        # storing cached data.
+        root_directory: ""
+        # cache.raft.sample_pool_size (int): How many deletion candidates to 
+        # maintain between evictions
+        sample_pool_size: 500
+        # cache.raft.samples_per_eviction (int): How many records to sample on 
+        # each eviction
+        samples_per_eviction: 20
+    redis:
+        # cache.redis.max_value_size_bytes (int64): The maximum value size to 
+        # cache in redis (in bytes).
+        max_value_size_bytes: 10000000
+        # cache.redis.redis_target (string): A redis target for improved 
+        # Caching/RBE performance. Target can be provided as either a redis 
+        # connection URI or a host:port pair. URI schemas supported: 
+        # redis[s]://[[USER][:PASSWORD]@][HOST][:PORT][/DATABASE] or 
+        # unix://[[USER][:PASSWORD]@]SOCKET_PATH[?db=DATABASE] ** Enterprise 
+        # only **
+        redis_target: ""
+        sharded:
+            # cache.redis.sharded.password (string): Redis password
+            password: ""
+            # cache.redis.sharded.shards ([]string): Ordered list of Redis 
+            # shard addresses.
+            shards: []
+            # cache.redis.sharded.username (string): Redis username
+            username: ""
+    # cache.redis_target (string): A redis target for improved Caching/RBE 
+    # performance. Target can be provided as either a redis connection URI or 
+    # a host:port pair. URI schemas supported: 
+    # redis[s]://[[USER][:PASSWORD]@][HOST][:PORT][/DATABASE] or 
+    # unix://[[USER][:PASSWORD]@]SOCKET_PATH[?db=DATABASE] ** Enterprise only 
+    # **
+    redis_target: ""
+    s3:
+        # cache.s3.bucket (string): The AWS S3 bucket to store files in.
+        bucket: ""
+        # cache.s3.credentials_profile (string): A custom credentials profile 
+        # to use.
+        credentials_profile: ""
+        # cache.s3.disable_ssl (bool): Disables the use of SSL, useful for 
+        # configuring the use of MinIO. **DEPRECATED** Specify a non-HTTPS 
+        # endpoint instead.
+        disable_ssl: false
+        # cache.s3.endpoint (string): The AWS endpoint to use, useful for 
+        # configuring the use of MinIO.
+        endpoint: ""
+        # cache.s3.path_prefix (string): Prefix inside the AWS S3 bucket to 
+        # store files
+        path_prefix: ""
+        # cache.s3.region (string): The AWS region.
+        region: ""
+        # cache.s3.role_arn (string): The role ARN to use for web identity 
+        # auth.
+        role_arn: ""
+        # cache.s3.role_session_name (string): The role session name to use 
+        # for web identity auth.
+        role_session_name: ""
+        # cache.s3.s3_force_path_style (bool): Force path style urls for 
+        # objects, useful for configuring the use of MinIO.
+        s3_force_path_style: false
+        # cache.s3.static_credentials_id (string): Static credentials ID to 
+        # use, useful for configuring the use of MinIO.
+        static_credentials_id: ""
+        # cache.s3.static_credentials_secret (string): Static credentials 
+        # secret to use, useful for configuring the use of MinIO.
+        static_credentials_secret: ""
+        # cache.s3.static_credentials_token (string): Static credentials token 
+        # to use, useful for configuring the use of MinIO.
+        static_credentials_token: ""
+        # cache.s3.ttl_days (int): The period after which cache files should 
+        # be TTLd. Disabled if 0.
+        ttl_days: 0
+        # cache.s3.web_identity_token_file (string): The file path to the web 
+        # identity token file.
+        web_identity_token_file: ""
+    # cache.tree_cache_min_descendents (int): The min number of descendents a 
+    # node must parent in order to be cached
+    tree_cache_min_descendents: 3
+    # cache.tree_cache_min_level (int): The min level at which the tree may be 
+    # cached. 0 is the root
+    tree_cache_min_level: 1
+    # cache.tree_cache_seed (string): If set, hash this with digests before 
+    # caching / reading from tree cache
+    tree_cache_seed: treecache-03011023
+    # cache.zstd_transcoding_enabled (bool): Whether to accept requests to 
+    # read/write zstd-compressed blobs, compressing/decompressing 
+    # outgoing/incoming blobs on the fly.
+    zstd_transcoding_enabled: true
+crypter:
+    # crypter.key_reencrypt_interval (time.Duration): How frequently keys will 
+    # be re-encrypted (to support key rotation).
+    key_reencrypt_interval: 6h0m0s
+    # crypter.key_ttl (time.Duration): The maximum amount of time a key can be 
+    # cached without being re-verified before it is considered invalid.
+    key_ttl: 10m0s
+database:
+    # database.advanced_data_source (db.AdvancedConfig): Alternative to the 
+    # database.data_source flag that allows finer control over database 
+    # settings as well as allowing use of AWS IAM credentials. For most users, 
+    # database.data_source is a simpler configuration method.
+    advanced_data_source:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.advanced_read_replica (db.AdvancedConfig): Advanced alternative 
+    # to database.read_replica. Refer to database.advanced for more 
+    # information.
+    advanced_read_replica:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.conn_max_lifetime_seconds (int): The maximum lifetime of a 
+    # connection to the db
+    conn_max_lifetime_seconds: 0
+    # database.data_source (string): The SQL database to connect to, specified 
+    # as a connection string.
+    data_source: sqlite3:///tmp/buildbuddy.db
+    # database.log_queries (bool): If true, log all queries
+    log_queries: false
+    # database.max_idle_conns (int): The maximum number of idle connections to 
+    # maintain to the db
+    max_idle_conns: 0
+    # database.max_open_conns (int): The maximum number of open connections to 
+    # maintain to the db
+    max_open_conns: 0
+    # database.print_schema_changes_and_exit (bool): If set, print schema 
+    # changes from auto-migration, then exit the program.
+    print_schema_changes_and_exit: false
+    # database.read_replica (string): A secondary, read-only SQL database to 
+    # connect to, specified as a connection string.
+    read_replica: ""
+    # database.slow_query_threshold (time.Duration): Queries longer than this 
+    # duration will be logged with a 'Slow SQL' warning.
+    slow_query_threshold: 500ms
+    # database.stats_poll_interval (time.Duration): How often to poll the DB 
+    # client for connection stats (default: '5s').
+    stats_poll_interval: 5s
+executor:
+    # executor.default_image (string): The default docker image to use to warm 
+    # up executors or if no platform property is set. Ex: 
+    # gcr.io/flame-public/executor-docker-default:enterprise-v1.5.4
+    default_image: gcr.io/flame-public/executor-docker-default:enterprise-v1.6.0
+    # executor.default_isolation_type (string): The default workload isolation 
+    # type when no type is specified in an action. If not set, we use the 
+    # first of the following that is set: docker, podman, firecracker, or none 
+    # (bare).
+    default_isolation_type: ""
+    # executor.default_xcode_version (string): Sets the default Xcode version 
+    # number to use if an action doesn't specify one. If not set, 
+    # /Applications/Xcode.app/ is used.
+    default_xcode_version: ""
+    # executor.docker_socket (string): If set, run execution commands in 
+    # docker using the provided socket.
+    docker_socket: ""
+    # executor.enable_bare_runner (bool): Enables running execution commands 
+    # directly on the host without isolation.
+    enable_bare_runner: false
+    # executor.enable_firecracker (bool): Enables running execution commands 
+    # inside of firecracker VMs
+    enable_firecracker: false
+    # executor.enable_podman (bool): Enables running execution commands inside 
+    # podman container.
+    enable_podman: false
+    # executor.enable_sandbox (bool): Enables running execution commands 
+    # inside of sandbox-exec.
+    enable_sandbox: false
+    # executor.enable_vfs (bool): Whether FUSE based filesystem is enabled.
+    enable_vfs: false
+    # executor.extra_env_vars ([]string): Additional environment variables to 
+    # pass to remotely executed actions. i.e. MY_ENV_VAR=foo
+    extra_env_vars: []
+    # executor.forced_network_isolation_type (string): If set, run all 
+    # commands that require networking with this isolation
+    forced_network_isolation_type: ""
+    # executor.host_id (string): Optional: Allows for manual specification of 
+    # an executor's host id. If not set, a random UUID will be used.
+    host_id: ""
+    # executor.memory_bytes (int64): Optional maximum memory to allocate to 
+    # execution tasks (approximate). Cannot set both this option and the 
+    # SYS_MEMORY_BYTES env var.
+    memory_bytes: 0
+    # executor.millicpu (int64): Optional maximum CPU milliseconds to allocate 
+    # to execution tasks (approximate). Cannot set both this option and the 
+    # SYS_MILLICPU env var.
+    millicpu: 0
+gcp:
+    # gcp.client_id (string): The client id to use for GCP linking.
+    client_id: ""
+    # gcp.client_secret (string): The client secret to use for GCP linking.
+    client_secret: ""
+github:
+    # github.access_token (string): The GitHub access token used to post 
+    # GitHub commit statuses. ** Enterprise only **
+    access_token: ""
+    app:
+        # github.app.client_id (string): GitHub app OAuth client ID.
+        client_id: ""
+        # github.app.client_secret (string): GitHub app OAuth client secret.
+        client_secret: ""
+        # github.app.enabled (bool): Whether to enable the BuildBuddy GitHub 
+        # app server.
+        enabled: false
+        # github.app.id (string): GitHub app ID.
+        id: ""
+        # github.app.private_key (string): GitHub app private key.
+        private_key: ""
+        # github.app.public_link (string): GitHub app installation URL.
+        public_link: ""
+        # github.app.webhook_secret (string): GitHub app webhook secret used 
+        # to verify that webhook payload contents were sent by GitHub.
+        webhook_secret: ""
+    # github.client_id (string): The client ID of your GitHub Oauth App. ** 
+    # Enterprise only **
+    client_id: ""
+    # github.client_secret (string): The client secret of your GitHub Oauth 
+    # App. ** Enterprise only **
+    client_secret: ""
+    # github.jwt_key (string): The key to use when signing JWT tokens for 
+    # github auth.
+    jwt_key: ""
+    # github.status_name_suffix (string): Suffix to be appended to all 
+    # reported GitHub status names. Useful for differentiating BuildBuddy 
+    # deployments. For example: '(dev)' ** Enterprise only **
+    status_name_suffix: ""
+    # github.status_per_test_target (bool): If true, report status per test 
+    # target. ** Enterprise only **
+    status_per_test_target: false
+integrations:
+    invocation_upload:
+        # integrations.invocation_upload.enabled (bool): Whether to upload 
+        # webhook data to the webhook URL configured per-Group. ** Enterprise 
+        # only **
+        enabled: false
+        # integrations.invocation_upload.gcs_credentials (string): Credentials 
+        # JSON for the Google service account used to authenticate when GCS is 
+        # used as the invocation upload target. ** Enterprise only **
+        gcs_credentials: ""
+    slack:
+        # integrations.slack.webhook_url (string): A Slack webhook url to post 
+        # build update messages to.
+        webhook_url: ""
+keystore:
+    aws:
+        # keystore.aws.credentials (string): AWS CSV credentials that will be 
+        # used to authenticate. If not specified, credentials will be 
+        # retrieved as described by 
+        # https://docs.aws.amazon.com/sdkref/latest/guide/standardized-credentials.html
+        credentials: ""
+        # keystore.aws.credentials_file (string): A path to a AWS CSV 
+        # credentials file that will be used to authenticate. If not 
+        # specified, credentials will be retrieved as described by 
+        # https://docs.aws.amazon.com/sdkref/latest/guide/standardized-credentials.html
+        credentials_file: ""
+        # keystore.aws.enabled (bool): Whether AWS KMS support should be 
+        # enabled. Implicitly enabled if the master key URI references an AWS 
+        # KMS URI.
+        enabled: false
+    gcp:
+        # keystore.gcp.credentials (string): GCP JSON credentials that will be 
+        # used to authenticate.
+        credentials: ""
+        # keystore.gcp.credentials_file (string): A path to a gcp JSON 
+        # credentials file that will be used to authenticate.
+        credentials_file: ""
+        # keystore.gcp.enabled (bool): Whether GCP KMS support should be 
+        # enabled. Implicitly enabled if the master key URI references a GCP 
+        # KMS URI.
+        enabled: false
+    # keystore.local_insecure_kms_directory (string): For development only. If 
+    # set, keys in format local-insecure-kms://[id] are read from this 
+    # directory.
+    local_insecure_kms_directory: ""
+    # keystore.master_key_uri (string): The master key URI (see tink docs for 
+    # example)
+    master_key_uri: ""
+monitoring:
+    basic_auth:
+        # monitoring.basic_auth.password (string): Optional password for basic 
+        # auth on the monitoring port.
+        password: ""
+        # monitoring.basic_auth.username (string): Optional username for basic 
+        # auth on the monitoring port.
+        username: ""
+olap_database:
+    # olap_database.auto_migrate_db (bool): If true, attempt to automigrate 
+    # the db when connecting
+    auto_migrate_db: true
+    # olap_database.cluster_name (string): The cluster name of the database
+    cluster_name: '{cluster}'
+    # olap_database.conn_max_lifetime (time.Duration): The maximum lifetime of 
+    # a connection to clickhouse
+    conn_max_lifetime: 0s
+    # olap_database.data_source (string): The clickhouse database to connect 
+    # to, specified a a connection string
+    data_source: ""
+    # olap_database.enable_data_replication (bool): If true, data replication 
+    # is enabled.
+    enable_data_replication: false
+    # olap_database.max_idle_conns (int): The maximum number of idle 
+    # connections to maintain to the db
+    max_idle_conns: 0
+    # olap_database.max_open_conns (int): The maximum number of open 
+    # connections to maintain to the db
+    max_open_conns: 0
+    # olap_database.print_schema_changes_and_exit (bool): If set, print schema 
+    # changes from auto-migration, then exit the program.
+    print_schema_changes_and_exit: false
+    # olap_database.replica_name (string): The replica name of the table in 
+    # zookeeper
+    replica_name: '{replica}'
+    # olap_database.zoo_path (string): The path to the table name in 
+    # zookeeper, used to set up data replication
+    zoo_path: /clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}
+openai:
+    # openai.api_key (string): OpenAI API key
+    api_key: ""
+    # openai.model (string): OpenAI model name to use. Find them here: 
+    # https://platform.openai.com/docs/models
+    model: gpt-3.5-turbo
+org:
+    # org.domain (string): Your organization's email domain. If this is set, 
+    # only users with email addresses in this domain will be able to register 
+    # for a BuildBuddy account.
+    domain: ""
+    # org.name (string): The name of your organization, which is displayed on 
+    # your organization's build history.
+    name: Organization
+prometheus:
+    # prometheus.address (string): the address of the promethus HTTP API
+    address: ""
+remote_execution:
+    # remote_execution.default_pool_name (string): The default executor pool 
+    # to use if one is not specified.
+    default_pool_name: ""
+    # remote_execution.enable_action_merging (bool): If enabled, identical 
+    # actions being executed concurrently are merged into a single execution.
+    enable_action_merging: true
+    # remote_execution.enable_executor_key_creation (bool): If enabled, UI 
+    # will allow executor keys to be created.
+    enable_executor_key_creation: false
+    # remote_execution.enable_redis_availability_monitoring (bool): If 
+    # enabled, the execution server will detect if Redis has lost state and 
+    # will ask Bazel to retry executions.
+    enable_redis_availability_monitoring: false
+    # remote_execution.enable_remote_exec (bool): If true, enable remote-exec. 
+    # ** Enterprise only **
+    enable_remote_exec: true
+    # remote_execution.enable_user_owned_executors (bool): If enabled, users 
+    # can register their own executors with the scheduler.
+    enable_user_owned_executors: false
+    # remote_execution.enable_workflows (bool): Whether to enable BuildBuddy 
+    # workflows.
+    enable_workflows: false
+    # remote_execution.force_user_owned_darwin_executors (bool): If enabled, 
+    # darwin actions will always run on user-owned executors.
+    force_user_owned_darwin_executors: false
+    # remote_execution.redis_pubsub_pool_size (int): Maximum number of 
+    # connections used for waiting for execution updates.
+    redis_pubsub_pool_size: 10000
+    # remote_execution.redis_target (string): A Redis target for storing 
+    # remote execution state. Falls back to app.default_redis_target if 
+    # unspecified. Required for remote execution. To ease migration, the redis 
+    # target from the cache config will be used if neither this value nor 
+    # app.default_redis_target are specified.
+    redis_target: ""
+    # remote_execution.require_executor_authorization (bool): If true, 
+    # executors connecting to this server must provide a valid executor API 
+    # key.
+    require_executor_authorization: false
+    sharded_redis:
+        # remote_execution.sharded_redis.password (string): Redis password
+        password: ""
+        # remote_execution.sharded_redis.shards ([]string): Ordered list of 
+        # Redis shard addresses.
+        shards: []
+        # remote_execution.sharded_redis.username (string): Redis username
+        username: ""
+    # remote_execution.shared_executor_pool_group_id (string): Group ID that 
+    # owns the shared executor pool.
+    shared_executor_pool_group_id: ""
+    task_size_model:
+        # remote_execution.task_size_model.enabled (bool): Whether to enable 
+        # model-based task size prediction.
+        enabled: false
+        # remote_execution.task_size_model.features_config_path (string): Path 
+        # pointing to features.json config file.
+        features_config_path: ""
+        # remote_execution.task_size_model.serving_address (string): gRPC 
+        # address pointing to TensorFlow Serving prediction service with task 
+        # size models (cpu, mem).
+        serving_address: ""
+    # remote_execution.use_measured_task_sizes (bool): Whether to use measured 
+    # usage stats to determine task sizes.
+    use_measured_task_sizes: false
+    # remote_execution.workflows_ci_runner_bazel_command (string): Bazel 
+    # command to be used by the CI runner.
+    workflows_ci_runner_bazel_command: ""
+    # remote_execution.workflows_ci_runner_debug (bool): Whether to run the CI 
+    # runner in debug mode.
+    workflows_ci_runner_debug: false
+    # remote_execution.workflows_default_image (string): The default 
+    # container-image property to use for workflows. Must include docker:// 
+    # prefix if applicable.
+    workflows_default_image: docker://gcr.io/flame-public/buildbuddy-ci-runner@sha256:ba33bd1b3acdfe980b958baf7d05c2041c9d4183d15fdf665dd236289d777709
+    # remote_execution.workflows_enable_firecracker (bool): Whether to enable 
+    # firecracker for Linux workflow actions.
+    workflows_enable_firecracker: false
+    # remote_execution.workflows_linux_compute_units (int): Number of 
+    # BuildBuddy compute units (BCU) to reserve for Linux workflow actions.
+    workflows_linux_compute_units: 3
+    # remote_execution.workflows_mac_compute_units (int): Number of BuildBuddy 
+    # compute units (BCU) to reserve for Mac workflow actions.
+    workflows_mac_compute_units: 3
+    # remote_execution.workflows_pool_name (string): The executor pool to use 
+    # for workflow actions. Defaults to the default executor pool if not 
+    # specified.
+    workflows_pool_name: ""
+soci_artifact_store:
+    # soci_artifact_store.cache_seed (string): If set, this seed is hashed 
+    # with container image IDs to generate cache keys storing soci indexes.
+    cache_seed: socicache-06052023
+    # soci_artifact_store.layer_storage (string): Directory in which to store 
+    # pulled container image layers for indexing by soci artifact store.
+    layer_storage: /tmp/
+ssl:
+    # ssl.cert_file (string): Path to a PEM encoded certificate file to use 
+    # for TLS if not using ACME.
+    cert_file: ""
+    # ssl.client_ca_cert (string): PEM encoded certificate authority used to 
+    # issue client certificates for mTLS auth.
+    client_ca_cert: ""
+    # ssl.client_ca_cert_file (string): Path to a PEM encoded certificate 
+    # authority file used to issue client certificates for mTLS auth.
+    client_ca_cert_file: ""
+    # ssl.client_ca_key (string): PEM encoded certificate authority key used 
+    # to issue client certificates for mTLS auth.
+    client_ca_key: ""
+    # ssl.client_ca_key_file (string): Path to a PEM encoded certificate 
+    # authority key file used to issue client certificates for mTLS auth.
+    client_ca_key_file: ""
+    # ssl.client_cert_lifespan (time.Duration): The duration client 
+    # certificates are valid for. Ex: '730h' for one month. If not set, 
+    # defaults to 100 years.
+    client_cert_lifespan: 876000h0m0s
+    # ssl.default_host (string): Host name to use for ACME generated cert if 
+    # TLS request does not contain SNI.
+    default_host: ""
+    # ssl.enable_ssl (bool): Whether or not to enable SSL/TLS on gRPC 
+    # connections (gRPCS).
+    enable_ssl: false
+    # ssl.host_whitelist ([]string): Cloud-Only
+    host_whitelist: []
+    # ssl.key_file (string): Path to a PEM encoded key file to use for TLS if 
+    # not using ACME.
+    key_file: ""
+    # ssl.self_signed (bool): If true, a self-signed cert will be generated 
+    # for TLS termination.
+    self_signed: false
+    # ssl.upgrade_insecure (bool): True if http requests should be redirected 
+    # to https. Assumes http traffic is served on port 80 and https traffic is 
+    # served on port 443 (typically via an ingress / load balancer).
+    upgrade_insecure: false
+    # ssl.use_acme (bool): Whether or not to automatically configure SSL certs 
+    # using ACME. If ACME is enabled, cert_file and key_file should not be 
+    # set.
+    use_acme: false
+storage:
+    aws_s3:
+        # storage.aws_s3.bucket (string): The AWS S3 bucket to store files in.
+        bucket: ""
+        # storage.aws_s3.credentials_profile (string): A custom credentials 
+        # profile to use.
+        credentials_profile: ""
+        # storage.aws_s3.disable_ssl (bool): Disables the use of SSL, useful 
+        # for configuring the use of MinIO. **DEPRECATED** Specify a non-HTTPS 
+        # endpoint instead.
+        disable_ssl: false
+        # storage.aws_s3.endpoint (string): The AWS endpoint to use, useful 
+        # for configuring the use of MinIO.
+        endpoint: ""
+        # storage.aws_s3.region (string): The AWS region.
+        region: ""
+        # storage.aws_s3.role_arn (string): The role ARN to use for web 
+        # identity auth.
+        role_arn: ""
+        # storage.aws_s3.role_session_name (string): The role session name to 
+        # use for web identity auth.
+        role_session_name: ""
+        # storage.aws_s3.s3_force_path_style (bool): Force path style urls for 
+        # objects, useful for configuring the use of MinIO.
+        s3_force_path_style: false
+        # storage.aws_s3.static_credentials_id (string): Static credentials ID 
+        # to use, useful for configuring the use of MinIO.
+        static_credentials_id: ""
+        # storage.aws_s3.static_credentials_secret (string): Static 
+        # credentials secret to use, useful for configuring the use of MinIO.
+        static_credentials_secret: ""
+        # storage.aws_s3.static_credentials_token (string): Static credentials 
+        # token to use, useful for configuring the use of MinIO.
+        static_credentials_token: ""
+        # storage.aws_s3.web_identity_token_file (string): The file path to 
+        # the web identity token file.
+        web_identity_token_file: ""
+    azure:
+        # storage.azure.account_key (string): The key for the Azure storage 
+        # account
+        account_key: ""
+        # storage.azure.account_name (string): The name of the Azure storage 
+        # account
+        account_name: ""
+        # storage.azure.container_name (string): The name of the Azure storage 
+        # container
+        container_name: ""
+    # storage.chunk_file_size_bytes (int): How many bytes to buffer in memory 
+    # before flushing a chunk of build protocol data to disk.
+    chunk_file_size_bytes: 3000000
+    # storage.cleanup_batch_size (int): How many invocations to delete in each 
+    # janitor cleanup task
+    cleanup_batch_size: 10
+    # storage.disable_persist_cache_artifacts (bool): If disabled, buildbuddy 
+    # will not persist cache artifacts in the blobstore. This may make older 
+    # invocations not diaplay properly.
+    disable_persist_cache_artifacts: false
+    disk:
+        # storage.disk.root_directory (string): The root directory to store 
+        # all blobs in, if using disk based storage.
+        root_directory: /tmp/buildbuddy
+        # storage.disk.use_v2_layout (bool): If enabled, files will be stored 
+        # using the v2 layout. See disk_cache.MigrateToV2Layout for a 
+        # description.
+        use_v2_layout: false
+    # storage.enable_chunked_event_logs (bool): If true, Event logs will be 
+    # stored separately from the invocation proto in chunks.
+    enable_chunked_event_logs: false
+    execution:
+        # storage.execution.cleanup_batch_size (int): How many invocations to 
+        # delete in each janitor cleanup task
+        cleanup_batch_size: 200
+        # storage.execution.cleanup_interval (time.Duration): How often the 
+        # janitor cleanup tasks will run
+        cleanup_interval: 5m0s
+        # storage.execution.cleanup_workers (int): How many cleanup tasks to 
+        # run
+        cleanup_workers: 1
+        # storage.execution.ttl (time.Duration): The time, in seconds, to keep 
+        # invocations before deletion. 0 disables invocation deletion.
+        ttl: 0s
+    gcs:
+        # storage.gcs.bucket (string): The name of the GCS bucket to store 
+        # build artifact files in.
+        bucket: ""
+        # storage.gcs.credentials (string): Credentials in JSON format that 
+        # will be used to authenticate to GCS.
+        credentials: ""
+        # storage.gcs.credentials_file (string): A path to a JSON credentials 
+        # file that will be used to authenticate to GCS.
+        credentials_file: ""
+        # storage.gcs.project_id (string): The Google Cloud project ID of the 
+        # project owning the above credentials and GCS bucket.
+        project_id: ""
+    # storage.path_prefix (string): The prefix directory to store all blobs in
+    path_prefix: ""
+    # storage.tempdir (string): Root directory for temporary files. Defaults 
+    # to the OS-specific temp dir.
+    tempdir: /tmp
+    # storage.ttl_seconds (int): The time, in seconds, to keep invocations 
+    # before deletion. 0 disables invocation deletion.
+    ttl_seconds: 0
+vertexai:
+    # vertexai.credentials (string): The GCP credentials to use
+    credentials: ""
+    # vertexai.model (string): The model ID to use
+    model: chat-bison@001
+    # vertexai.project (string): The GCP project ID to use
+    project: flame-build
+    # vertexai.region (string): The GCP region to use
+    region: us-central1
+
+```
+
+### BuildBuddy Executor[](#buildbuddy-executor "Direct link to BuildBuddy Executor")
+
+```
+# Unstructured settings
+
+# auto_migrate_db (bool): If true, attempt to automigrate the db when 
+# connecting
+auto_migrate_db: true
+# auto_migrate_db_and_exit (bool): If true, attempt to automigrate the db when 
+# connecting, then exit the program.
+auto_migrate_db_and_exit: false
+# debug_stream_command_outputs (bool): If true, stream command outputs to the 
+# terminal. Intended for debugging purposes only and should not be used in 
+# production.
+debug_stream_command_outputs: false
+# debug_use_local_images_only (bool): Do not pull OCI images and only used 
+# locally cached images. This can be set to test local image builds during 
+# development without needing to push to a container registry. Not intended 
+# for production use.
+debug_use_local_images_only: false
+# docker_cap_add (string): Sets --cap-add= on the docker command. Comma 
+# separated.
+docker_cap_add: ""
+# drop_invocation_pk_cols (bool): If true, attempt to drop invocation PK cols
+drop_invocation_pk_cols: false
+# grpc_client_origin_header (string): Header value to set for 
+# x-buildbuddy-origin.
+grpc_client_origin_header: ""
+# grpc_port (int): The port to listen for gRPC traffic on
+grpc_port: 1985
+# grpcs_port (int): The port to listen for gRPCS traffic on
+grpcs_port: 1986
+# internal_grpc_port (int): The port to listen for internal gRPC traffic on
+internal_grpc_port: 1987
+# internal_grpcs_port (int): The port to listen for internal gRPCS traffic on
+internal_grpcs_port: 1988
+# listen (string): The interface to listen on (default: 0.0.0.0)
+listen: 0.0.0.0
+# log_goroutine_profile_on_shutdown (bool): Whether to log all goroutine stack 
+# traces on shutdown.
+log_goroutine_profile_on_shutdown: false
+# max_shutdown_duration (time.Duration): Time to wait for shutdown
+max_shutdown_duration: 25s
+# monitoring_port (int): The port to listen for monitoring traffic on
+monitoring_port: 9090
+# port (int): The port to listen for HTTP traffic on
+port: 8080
+# redis_command_buffer_flush_period (time.Duration): How long to wait between 
+# flushing buffered redis commands. Setting this to 0 will disable buffering 
+# at the cost of higher redis QPS.
+redis_command_buffer_flush_period: 250ms
+# report_not_ready (bool): If set to true, the app will always report as being 
+# unready.
+report_not_ready: false
+# server_type (string): The server type to match on health checks
+server_type: prod-buildbuddy-executor
+# shutdown_lameduck_duration (time.Duration): If set, the server will be 
+# marked unready but not run shutdown functions until this period passes.
+shutdown_lameduck_duration: 0s
+# zone_override (string): A value that will override the auto-detected zone. 
+# Ignored if empty
+zone_override: ""
+
+# Structured settings
+
+app:
+    # app.admin_only_create_group (bool): If true, only admins of an existing 
+    # group can create a new groups.
+    admin_only_create_group: false
+    # app.build_buddy_url (URL): The external URL where your BuildBuddy 
+    # instance can be found.
+    build_buddy_url: http://localhost:8080
+    # app.cache_api_url (URL): Overrides the default remote cache protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    cache_api_url: ""
+    client_identity:
+        # app.client_identity.client (string): The client identifier to place 
+        # in the identity header.
+        client: ""
+        # app.client_identity.key (string): The key used to sign and verify 
+        # identity JWTs.
+        key: ""
+        # app.client_identity.origin (string): The origin identifier to place 
+        # in the identity header.
+        origin: ""
+    # app.default_redis_target (string): A Redis target for storing remote 
+    # shared state. To ease migration, the redis target from the remote 
+    # execution config will be used if this value is not specified.
+    default_redis_target: ""
+    default_sharded_redis:
+        # app.default_sharded_redis.password (string): Redis password
+        password: ""
+        # app.default_sharded_redis.shards ([]string): Ordered list of Redis 
+        # shard addresses.
+        shards: []
+        # app.default_sharded_redis.username (string): Redis username
+        username: ""
+    # app.default_subdomains ([]string): List of subdomains that should not be 
+    # handled as user-owned subdomains.
+    default_subdomains: []
+    # app.enable_grpc_metrics_by_group_id (bool): If enabled, grpc metrics by 
+    # group ID will be recorded
+    enable_grpc_metrics_by_group_id: false
+    # app.enable_prometheus_histograms (bool): If true, collect prometheus 
+    # histograms for all RPCs
+    enable_prometheus_histograms: true
+    # app.enable_structured_logging (bool): If true, log messages will be 
+    # json-formatted.
+    enable_structured_logging: false
+    # app.enable_subdomain_matching (bool): If true, request subdomain will be 
+    # taken into account when determining what request restrictions should be 
+    # applied.
+    enable_subdomain_matching: false
+    # app.events_api_url (URL): Overrides the default build event protocol 
+    # gRPC address shown by BuildBuddy on the configuration screen.
+    events_api_url: ""
+    # app.grpc_max_recv_msg_size_bytes (int): Configures the max GRPC receive 
+    # message size [bytes]
+    grpc_max_recv_msg_size_bytes: 50000000
+    # app.grpc_over_http_port_enabled (bool): Cloud-Only
+    grpc_over_http_port_enabled: false
+    # app.ignore_forced_tracing_header (bool): If set, we will not honor the 
+    # forced tracing header.
+    ignore_forced_tracing_header: false
+    # app.log_enable_gcp_logging_format (bool): If true, the output structured 
+    # logs will be compatible with format expected by GCP Logging.
+    log_enable_gcp_logging_format: false
+    # app.log_error_stack_traces (bool): If true, stack traces will be printed 
+    # for errors that have them.
+    log_error_stack_traces: false
+    # app.log_gcp_log_id (string): The log ID to log to in GCP (if any).
+    log_gcp_log_id: ""
+    # app.log_gcp_project_id (string): The project ID to log to in GCP (if 
+    # any).
+    log_gcp_project_id: ""
+    # app.log_include_short_file_name (bool): If true, log messages will 
+    # include shortened originating file name.
+    log_include_short_file_name: false
+    # app.log_level (string): The desired log level. Logs with a level >= this 
+    # level will be emitted. One of {'fatal', 'error', 'warn', 'info', 
+    # 'debug'}
+    log_level: info
+    # app.trace_fraction (float64): Fraction of requests to sample for 
+    # tracing.
+    trace_fraction: 0
+    # app.trace_fraction_overrides ([]string): Tracing fraction override based 
+    # on name in format name=fraction.
+    trace_fraction_overrides: []
+    # app.trace_jaeger_collector (string): Address of the Jager collector 
+    # endpoint where traces will be sent.
+    trace_jaeger_collector: ""
+    # app.trace_project_id (string): Optional GCP project ID to export traces 
+    # to. If not specified, determined from default credentials or metadata 
+    # server if running on GCP.
+    trace_project_id: ""
+    # app.trace_service_name (string): Name of the service to associate with 
+    # traces.
+    trace_service_name: ""
+auth:
+    # auth.admin_group_id (string): ID of a group whose members can perform 
+    # actions only accessible to server admins.
+    admin_group_id: ""
+    # auth.disable_refresh_token (bool): If true, the offline_access scope 
+    # which requests refresh tokens will not be requested.
+    disable_refresh_token: false
+    # auth.domain_wide_cookies (bool): If true, cookies will have domain set 
+    # so that they are accessible on domain and all subdomains.
+    domain_wide_cookies: false
+    # auth.enable_anonymous_usage (bool): If true, unauthenticated build 
+    # uploads will still be allowed but won't be associated with your 
+    # organization.
+    enable_anonymous_usage: false
+    # auth.enable_self_auth (bool): If true, enables a single user login via 
+    # an oauth provider on the buildbuddy server. Recommend use only when 
+    # server is behind a firewall; this option may allow anyone with access to 
+    # the webpage admin rights to your buildbuddy installation. ** Enterprise 
+    # only **
+    enable_self_auth: false
+    # auth.force_approval (bool): If true, when a user doesn't have a session 
+    # (first time logging in, or manually logged out) force the auth provider 
+    # to show the consent screen allowing the user to select an account if 
+    # they have multiple. This isn't supported by all auth providers.
+    force_approval: false
+    # auth.https_only_cookies (bool): If true, cookies will only be set over 
+    # https connections.
+    https_only_cookies: false
+    # auth.jwt_claims_cache_ttl (time.Duration): TTL for JWT string to parsed 
+    # claims caching. Set to '0' to disable cache.
+    jwt_claims_cache_ttl: 15s
+    # auth.jwt_duration (time.Duration): Maximum lifetime of the generated 
+    # JWT.
+    jwt_duration: 6h0m0s
+    # auth.jwt_key (string): The key to use when signing JWT tokens.
+    jwt_key: set_the_jwt_in_config
+    # auth.oauth_providers ([]oidc.OauthProvider): The list of oauth providers 
+    # to use to authenticate.
+    oauth_providers: []
+    # For example:
+    # - issuer_url: "" # The issuer URL of this OIDC Provider. (type: string)
+    #   client_id: "" # The oauth client ID. (type: string)
+    #   client_secret: "" # The oauth client secret. (type: string)
+    #   slug: "" # The slug of this OIDC Provider. (type: string)
+
+    saml:
+        # auth.saml.cert (string): PEM encoded certificate used for SAML auth.
+        cert: ""
+        # auth.saml.cert_file (string): Path to a PEM encoded certificate file 
+        # used for SAML auth.
+        cert_file: ""
+        # auth.saml.key (string): PEM encoded certificate key used for SAML 
+        # auth.
+        key: ""
+        # auth.saml.key_file (string): Path to a PEM encoded certificate key 
+        # file used for SAML auth.
+        key_file: ""
+cache:
+    client:
+        # cache.client.enable_download_compression (bool): If true, enable 
+        # compression of downloads from remote caches
+        enable_download_compression: true
+        # cache.client.enable_upload_compression (bool): If true, enable 
+        # compression of uploads to remote caches
+        enable_upload_compression: true
+    gcs:
+        # cache.gcs.bucket (string): The name of the GCS bucket to store cache 
+        # files in.
+        bucket: ""
+        # cache.gcs.credentials_file (string): A path to a JSON credentials 
+        # file that will be used to authenticate to GCS.
+        credentials_file: ""
+        # cache.gcs.project_id (string): The Google Cloud project ID of the 
+        # project owning the above credentials and GCS bucket.
+        project_id: ""
+        # cache.gcs.ttl_days (int64): The period after which cache files 
+        # should be TTLd. Disabled if 0.
+        ttl_days: 0
+    # cache.memcache_targets ([]string): Deprecated. Use Redis Target instead.
+    memcache_targets: []
+    redis:
+        # cache.redis.max_value_size_bytes (int64): The maximum value size to 
+        # cache in redis (in bytes).
+        max_value_size_bytes: 10000000
+        # cache.redis.redis_target (string): A redis target for improved 
+        # Caching/RBE performance. Target can be provided as either a redis 
+        # connection URI or a host:port pair. URI schemas supported: 
+        # redis[s]://[[USER][:PASSWORD]@][HOST][:PORT][/DATABASE] or 
+        # unix://[[USER][:PASSWORD]@]SOCKET_PATH[?db=DATABASE] ** Enterprise 
+        # only **
+        redis_target: ""
+        sharded:
+            # cache.redis.sharded.password (string): Redis password
+            password: ""
+            # cache.redis.sharded.shards ([]string): Ordered list of Redis 
+            # shard addresses.
+            shards: []
+            # cache.redis.sharded.username (string): Redis username
+            username: ""
+    # cache.redis_target (string): A redis target for improved Caching/RBE 
+    # performance. Target can be provided as either a redis connection URI or 
+    # a host:port pair. URI schemas supported: 
+    # redis[s]://[[USER][:PASSWORD]@][HOST][:PORT][/DATABASE] or 
+    # unix://[[USER][:PASSWORD]@]SOCKET_PATH[?db=DATABASE] ** Enterprise only 
+    # **
+    redis_target: ""
+    s3:
+        # cache.s3.bucket (string): The AWS S3 bucket to store files in.
+        bucket: ""
+        # cache.s3.credentials_profile (string): A custom credentials profile 
+        # to use.
+        credentials_profile: ""
+        # cache.s3.disable_ssl (bool): Disables the use of SSL, useful for 
+        # configuring the use of MinIO. **DEPRECATED** Specify a non-HTTPS 
+        # endpoint instead.
+        disable_ssl: false
+        # cache.s3.endpoint (string): The AWS endpoint to use, useful for 
+        # configuring the use of MinIO.
+        endpoint: ""
+        # cache.s3.path_prefix (string): Prefix inside the AWS S3 bucket to 
+        # store files
+        path_prefix: ""
+        # cache.s3.region (string): The AWS region.
+        region: ""
+        # cache.s3.role_arn (string): The role ARN to use for web identity 
+        # auth.
+        role_arn: ""
+        # cache.s3.role_session_name (string): The role session name to use 
+        # for web identity auth.
+        role_session_name: ""
+        # cache.s3.s3_force_path_style (bool): Force path style urls for 
+        # objects, useful for configuring the use of MinIO.
+        s3_force_path_style: false
+        # cache.s3.static_credentials_id (string): Static credentials ID to 
+        # use, useful for configuring the use of MinIO.
+        static_credentials_id: ""
+        # cache.s3.static_credentials_secret (string): Static credentials 
+        # secret to use, useful for configuring the use of MinIO.
+        static_credentials_secret: ""
+        # cache.s3.static_credentials_token (string): Static credentials token 
+        # to use, useful for configuring the use of MinIO.
+        static_credentials_token: ""
+        # cache.s3.ttl_days (int): The period after which cache files should 
+        # be TTLd. Disabled if 0.
+        ttl_days: 0
+        # cache.s3.web_identity_token_file (string): The file path to the web 
+        # identity token file.
+        web_identity_token_file: ""
+database:
+    # database.advanced_data_source (db.AdvancedConfig): Alternative to the 
+    # database.data_source flag that allows finer control over database 
+    # settings as well as allowing use of AWS IAM credentials. For most users, 
+    # database.data_source is a simpler configuration method.
+    advanced_data_source:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.advanced_read_replica (db.AdvancedConfig): Advanced alternative 
+    # to database.read_replica. Refer to database.advanced for more 
+    # information.
+    advanced_read_replica:
+        driver: "" # The driver to use: one of sqlite3, mysql, or postgresql. (type: string)
+        endpoint: "" # Typically the host:port combination of the database server. (type: string)
+        username: "" # Username to use when connecting. (type: string)
+        password: "" # Password to use when connecting. Not used if AWS IAM is enabled. (type: string)
+        db_name: "" # The name of the database to use for BuildBuddy data. (type: string)
+        region: "" # Region of the database instance. Required if AWS IAM is enabled. (type: string)
+        use_aws_iam: false # If enabled, AWS IAM authentication is used instead of fixed credentials. Make sure the endpoint includes the port, otherwise IAM-based auth will fail. (type: bool)
+        params: "" # Optional parameters to pass to the database driver (in format key1=val1&key2=val2) (type: string)
+    # database.conn_max_lifetime_seconds (int): The maximum lifetime of a 
+    # connection to the db
+    conn_max_lifetime_seconds: 0
+    # database.data_source (string): The SQL database to connect to, specified 
+    # as a connection string.
+    data_source: sqlite3:///tmp/buildbuddy.db
+    # database.log_queries (bool): If true, log all queries
+    log_queries: false
+    # database.max_idle_conns (int): The maximum number of idle connections to 
+    # maintain to the db
+    max_idle_conns: 0
+    # database.max_open_conns (int): The maximum number of open connections to 
+    # maintain to the db
+    max_open_conns: 0
+    # database.print_schema_changes_and_exit (bool): If set, print schema 
+    # changes from auto-migration, then exit the program.
+    print_schema_changes_and_exit: false
+    # database.read_replica (string): A secondary, read-only SQL database to 
+    # connect to, specified as a connection string.
+    read_replica: ""
+    # database.slow_query_threshold (time.Duration): Queries longer than this 
+    # duration will be logged with a 'Slow SQL' warning.
+    slow_query_threshold: 500ms
+    # database.stats_poll_interval (time.Duration): How often to poll the DB 
+    # client for connection stats (default: '5s').
+    stats_poll_interval: 5s
+executor:
+    # executor.api_key (string): API Key used to authorize the executor with 
+    # the BuildBuddy app server.
+    api_key: ""
+    # executor.app_target (string): The GRPC url of a buildbuddy app server.
+    app_target: grpcs://remote.buildbuddy.io
+    bare:
+        # executor.bare.enable_stats (bool): Whether to enable stats for bare 
+        # command execution.
+        enable_stats: false
+    # executor.container_registries ([]container.ContainerRegistry)
+    container_registries: []
+    # For example:
+    # - hostnames: [] # (type: []string)
+    #   username: "" # (type: string)
+    #   password: "" # (type: string)
+
+    # executor.context_based_shutdown_enabled (bool): Whether to remove 
+    # runners using context cancelation. This is a transitional flag that will 
+    # be removed in a future executor version.
+    context_based_shutdown_enabled: true
+    # executor.default_image (string): The default docker image to use to warm 
+    # up executors or if no platform property is set. Ex: 
+    # gcr.io/flame-public/executor-docker-default:enterprise-v1.5.4
+    default_image: gcr.io/flame-public/executor-docker-default:enterprise-v1.6.0
+    # executor.default_isolation_type (string): The default workload isolation 
+    # type when no type is specified in an action. If not set, we use the 
+    # first of the following that is set: docker, podman, firecracker, or none 
+    # (bare).
+    default_isolation_type: ""
+    # executor.default_xcode_version (string): Sets the default Xcode version 
+    # number to use if an action doesn't specify one. If not set, 
+    # /Applications/Xcode.app/ is used.
+    default_xcode_version: ""
+    # executor.delete_build_root_on_startup (bool): If true, delete the build 
+    # root on startup
+    delete_build_root_on_startup: false
+    # executor.delete_filecache_on_startup (bool): If true, delete the file 
+    # cache on startup
+    delete_filecache_on_startup: false
+    # executor.die_on_firecracker_failure (bool): Makes the host executor 
+    # process die if any command orchestrating or running Firecracker fails. 
+    # Useful for capturing failures preemptively. WARNING: using this option 
+    # MAY leave the host machine in an unhealthy state on Firecracker failure; 
+    # some post-hoc cleanup may be necessary.
+    die_on_firecracker_failure: false
+    # executor.disable_local_cache (bool): If true, a local file cache will 
+    # not be used.
+    disable_local_cache: false
+    # executor.docker_devices ([]container.DockerDeviceMapping): Configure 
+    # (docker) devices that will be available inside the sandbox container. 
+    # Format is 
+    # --executor.docker_devices='[{"PathOnHost":"/dev/foo","PathInContainer":"/some/dest","CgroupPermissions":"see,docker,docs"}]'
+    docker_devices: []
+    # For example:
+    # - path_on_host: "" # path to device that should be mapped from the host. (type: string)
+    #   path_in_container: "" # path under which the device will be present in container. (type: string)
+    #   cgroup_permissions: "" # cgroup permissions that should be assigned to device. (type: string)
+
+    # executor.docker_inherit_user_ids (bool): If set, run docker containers 
+    # using the same uid and gid as the user running the executor process.
+    docker_inherit_user_ids: false
+    # executor.docker_mount_mode (string): Sets the mount mode of volumes 
+    # mounted to docker images. Useful if running on SELinux 
+    # https://www.projectatomic.io/blog/2015/06/using-volumes-with-docker-can-cause-problems-with-selinux/
+    docker_mount_mode: ""
+    # executor.docker_net_host (bool): Sets --net=host on the docker command. 
+    # Intended for local development only. **DEPRECATED** Use 
+    # --executor.docker_network=host instead.
+    docker_net_host: false
+    # executor.docker_network (string): If set, set docker/podman --network to 
+    # this value by default. Can be overridden per-action with the 
+    # `dockerNetwork` exec property, which accepts values 'off' 
+    # (--network=none) or 'bridge' (--network=<default>).
+    docker_network: ""
+    # executor.docker_sibling_containers (bool): If set, mount the configured 
+    # Docker socket to containers spawned for each action, to enable 
+    # Docker-out-of-Docker (DooD). Takes effect only if docker_socket is also 
+    # set. Should not be set by executors that can run untrusted code.
+    docker_sibling_containers: false
+    # executor.docker_socket (string): If set, run execution commands in 
+    # docker using the provided socket.
+    docker_socket: ""
+    # executor.docker_volumes ([]string): Additional --volume arguments to be 
+    # passed to docker or podman.
+    docker_volumes: []
+    # executor.enable_bare_runner (bool): Enables running execution commands 
+    # directly on the host without isolation.
+    enable_bare_runner: false
+    # executor.enable_firecracker (bool): Enables running execution commands 
+    # inside of firecracker VMs
+    enable_firecracker: false
+    # executor.enable_local_snapshot_sharing (bool): Enables local snapshot 
+    # sharing for firecracker VMs. Also requires that 
+    # executor.firecracker_enable_nbd is true.
+    enable_local_snapshot_sharing: false
+    # executor.enable_podman (bool): Enables running execution commands inside 
+    # podman container.
+    enable_podman: false
+    # executor.enable_sandbox (bool): Enables running execution commands 
+    # inside of sandbox-exec.
+    enable_sandbox: false
+    # executor.enable_vfs (bool): Whether FUSE based filesystem is enabled.
+    enable_vfs: false
+    # executor.exclusive_task_scheduling (bool): If true, only one task will 
+    # be scheduled at a time. Default is false
+    exclusive_task_scheduling: false
+    # executor.extra_env_vars ([]string): Additional environment variables to 
+    # pass to remotely executed actions. i.e. MY_ENV_VAR=foo
+    extra_env_vars: []
+    # executor.firecracker_cgroup_version (string): Specifies the cgroup 
+    # version for firecracker to use.
+    firecracker_cgroup_version: ""
+    # executor.firecracker_debug_stream_vm_logs (bool): Stream firecracker VM 
+    # logs to the terminal.
+    firecracker_debug_stream_vm_logs: false
+    # executor.firecracker_debug_terminal (bool): Run an interactive terminal 
+    # in the Firecracker VM connected to the executor's controlling terminal. 
+    # For debugging only.
+    firecracker_debug_terminal: false
+    # executor.firecracker_enable_merged_rootfs (bool): Merges the containerfs 
+    # and scratchfs into a single rootfs, removing the need to use overlayfs 
+    # for the guest's root filesystem. Requires NBD to also be enabled.
+    firecracker_enable_merged_rootfs: false
+    # executor.firecracker_enable_nbd (bool): Enables network block devices 
+    # for firecracker VMs.
+    firecracker_enable_nbd: false
+    # executor.firecracker_enable_uffd (bool): Enables userfaultfd for 
+    # firecracker VMs.
+    firecracker_enable_uffd: false
+    # executor.firecracker_mount_workspace_file (bool): Enables mounting 
+    # workspace filesystem to improve performance of copying action outputs.
+    firecracker_mount_workspace_file: false
+    # executor.firecracker_workspace_disk_slack_space_mb (int64): Extra space 
+    # to allocate to firecracker workspace disks, in megabytes. ** 
+    # Experimental **
+    firecracker_workspace_disk_slack_space_mb: 2000
+    # executor.forced_network_isolation_type (string): If set, run all 
+    # commands that require networking with this isolation
+    forced_network_isolation_type: ""
+    # executor.host_id (string): Optional: Allows for manual specification of 
+    # an executor's host id. If not set, a random UUID will be used.
+    host_id: ""
+    # executor.host_root_directory (string): Path on the host where the 
+    # executor container root directory is mounted.
+    host_root_directory: ""
+    # executor.local_cache_directory (string): A local on-disk cache 
+    # directory. Must be on the same device (disk partition, Docker volume, 
+    # etc.) as the configured root_directory, since files are hard-linked to 
+    # this cache for performance reasons. Otherwise, 'Invalid cross-device 
+    # link' errors may result.
+    local_cache_directory: /tmp/buildbuddy/filecache
+    # executor.local_cache_size_bytes (int64): The maximum size, in bytes, to 
+    # use for the local on-disk cache
+    local_cache_size_bytes: 1000000000
+    # executor.memory_bytes (int64): Optional maximum memory to allocate to 
+    # execution tasks (approximate). Cannot set both this option and the 
+    # SYS_MEMORY_BYTES env var.
+    memory_bytes: 0
+    # executor.millicpu (int64): Optional maximum CPU milliseconds to allocate 
+    # to execution tasks (approximate). Cannot set both this option and the 
+    # SYS_MILLICPU env var.
+    millicpu: 0
+    podman:
+        # executor.podman.cpu_usage_path_template (string): Go template 
+        # specifying a path pointing to a container's total CPU usage, in CPU 
+        # nanoseconds. Templated with `ContainerID`.
+        cpu_usage_path_template: /sys/fs/cgroup/cpuacct/libpod_parent/libpod-{{.ContainerID}}/cpuacct.usage
+        # executor.podman.enable_image_streaming (bool): If set, all public 
+        # (non-authenticated) podman images are streamed using soci artifacts 
+        # generated and stored in the apps.
+        enable_image_streaming: false
+        # executor.podman.enable_private_image_streaming (bool): If set and 
+        # --executor.podman.enable_image_streaming is set, all private 
+        # (authenticated) podman images are streamed using soci artifacts 
+        # generated and stored in the apps.
+        enable_private_image_streaming: false
+        # executor.podman.enable_stats (bool): Whether to enable cgroup-based 
+        # podman stats.
+        enable_stats: false
+        # executor.podman.memory_usage_path_template (string): Go template 
+        # specifying a path pointing to a container's current memory usage, in 
+        # bytes. Templated with `ContainerID`.
+        memory_usage_path_template: /sys/fs/cgroup/memory/libpod_parent/libpod-{{.ContainerID}}/memory.usage_in_bytes
+        # executor.podman.pull_log_level (string): Level at which to log 
+        # `podman pull` command output. Should be one of the standard log 
+        # levels, all lowercase.
+        pull_log_level: ""
+        # executor.podman.pull_timeout (time.Duration): Timeout for image 
+        # pulls.
+        pull_timeout: 10m0s
+        # executor.podman.runtime (string): Enables running podman with other 
+        # runtimes, like gVisor (runsc).
+        runtime: ""
+        # executor.podman.soci_artifact_store_target (string): The GRPC url to 
+        # use to access the SociArtifactStore GRPC service.
+        soci_artifact_store_target: ""
+        # executor.podman.soci_store_binary (string): The name of the 
+        # soci-store binary to run. If empty, soci-store is not started even 
+        # if it's needed (for local development).
+        soci_store_binary: soci-store
+        # executor.podman.soci_store_keychain_port (int): The port on which 
+        # the soci-store local keychain service is exposed, for sharing 
+        # credentials for streaming private container images.
+        soci_store_keychain_port: 1989
+        # executor.podman.soci_store_log_level (string): The level at which 
+        # the soci-store should log. Should be one of the standard log levels, 
+        # all lowercase.
+        soci_store_log_level: ""
+        # executor.podman.transient_store (bool): Enables --transient-store 
+        # for podman commands.
+        transient_store: false
+        # executor.podman.warmup_default_images (bool): Whether to warmup the 
+        # default podman images or not.
+        warmup_default_images: true
+    # executor.pool (string): Executor pool name. Only one of this config 
+    # option or the MY_POOL environment variable should be specified.
+    pool: ""
+    # executor.preserve_existing_netns (bool): Preserve existing bb-executor 
+    # net namespaces. By default all "bb-executor" net namespaces are removed 
+    # on executor startup, but if multiple executors are running on the same 
+    # machine this behavior should be disabled to prevent them interfering 
+    # with each other.
+    preserve_existing_netns: false
+    # executor.root_directory (string): The root directory to use for build 
+    # files.
+    root_directory: /tmp/buildbuddy/remote_build
+    # executor.route_prefix (string): The prefix in the ip route to locate a 
+    # device: either 'default' or the ip range of the subnet e.g. 
+    # 172.24.0.0/18
+    route_prefix: default
+    runner_pool:
+        # executor.runner_pool.max_runner_count (int): Maximum number of 
+        # recycled RBE runners that can be pooled at once. Defaults to a value 
+        # derived from estimated CPU usage, max RAM, allocated CPU, and 
+        # allocated memory.
+        max_runner_count: 0
+        # executor.runner_pool.max_runner_disk_size_bytes (int64): Maximum 
+        # disk size for a recycled runner; runners exceeding this threshold 
+        # are not recycled. Defaults to 16GB.
+        max_runner_disk_size_bytes: 16000000000
+        # executor.runner_pool.max_runner_memory_usage_bytes (int64): Maximum 
+        # memory usage for a recycled runner; runners exceeding this threshold 
+        # are not recycled. Defaults to 1/10 of total RAM allocated to the 
+        # executor. (Only supported for Docker-based executors).
+        max_runner_memory_usage_bytes: 8000000000
+    # executor.shutdown_cleanup_duration (time.Duration): The minimum duration 
+    # during the shutdown window to allocate for cleaning up containers. This 
+    # is capped to the value of `max_shutdown_duration`.
+    shutdown_cleanup_duration: 15s
+    # executor.startup_warmup_max_wait_secs (int64): Maximum time to block 
+    # startup while waiting for default image to be pulled. Default is no 
+    # wait.
+    startup_warmup_max_wait_secs: 0
+    # executor.warmup_timeout_secs (int64): The default time (in seconds) to 
+    # wait for an executor to warm up i.e. download the default docker image. 
+    # Default is 120s
+    warmup_timeout_secs: 120
+    # executor.warmup_workflow_images (bool): Whether to warm up the Linux 
+    # workflow images (firecracker only).
+    warmup_workflow_images: false
+gcp:
+    # gcp.client_id (string): The client id to use for GCP linking.
+    client_id: ""
+    # gcp.client_secret (string): The client secret to use for GCP linking.
+    client_secret: ""
+github:
+    # github.access_token (string): The GitHub access token used to post 
+    # GitHub commit statuses. ** Enterprise only **
+    access_token: ""
+    app:
+        # github.app.client_id (string): GitHub app OAuth client ID.
+        client_id: ""
+        # github.app.client_secret (string): GitHub app OAuth client secret.
+        client_secret: ""
+        # github.app.enabled (bool): Whether to enable the BuildBuddy GitHub 
+        # app server.
+        enabled: false
+        # github.app.id (string): GitHub app ID.
+        id: ""
+        # github.app.private_key (string): GitHub app private key.
+        private_key: ""
+        # github.app.public_link (string): GitHub app installation URL.
+        public_link: ""
+        # github.app.webhook_secret (string): GitHub app webhook secret used 
+        # to verify that webhook payload contents were sent by GitHub.
+        webhook_secret: ""
+    # github.client_id (string): The client ID of your GitHub Oauth App. ** 
+    # Enterprise only **
+    client_id: ""
+    # github.client_secret (string): The client secret of your GitHub Oauth 
+    # App. ** Enterprise only **
+    client_secret: ""
+    # github.jwt_key (string): The key to use when signing JWT tokens for 
+    # github auth.
+    jwt_key: ""
+    # github.status_name_suffix (string): Suffix to be appended to all 
+    # reported GitHub status names. Useful for differentiating BuildBuddy 
+    # deployments. For example: '(dev)' ** Enterprise only **
+    status_name_suffix: ""
+monitoring:
+    basic_auth:
+        # monitoring.basic_auth.password (string): Optional password for basic 
+        # auth on the monitoring port.
+        password: ""
+        # monitoring.basic_auth.username (string): Optional username for basic 
+        # auth on the monitoring port.
+        username: ""
+    # monitoring.ssl_port (int): If non-negative, the SSL port to listen for 
+    # monitoring traffic on. `ssl` config must have `ssl_enabled: true` and be 
+    # properly configured.
+    ssl_port: -1
+olap_database:
+    # olap_database.cluster_name (string): The cluster name of the database
+    cluster_name: '{cluster}'
+    # olap_database.enable_data_replication (bool): If true, data replication 
+    # is enabled.
+    enable_data_replication: false
+    # olap_database.replica_name (string): The replica name of the table in 
+    # zookeeper
+    replica_name: '{replica}'
+    # olap_database.zoo_path (string): The path to the table name in 
+    # zookeeper, used to set up data replication
+    zoo_path: /clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}
+remote_execution:
+    # remote_execution.enable_remote_exec (bool): If true, enable remote-exec. 
+    # ** Enterprise only **
+    enable_remote_exec: true
+    # remote_execution.redis_target (string): A Redis target for storing 
+    # remote execution state. Falls back to app.default_redis_target if 
+    # unspecified. Required for remote execution. To ease migration, the redis 
+    # target from the cache config will be used if neither this value nor 
+    # app.default_redis_target are specified.
+    redis_target: ""
+    sharded_redis:
+        # remote_execution.sharded_redis.password (string): Redis password
+        password: ""
+        # remote_execution.sharded_redis.shards ([]string): Ordered list of 
+        # Redis shard addresses.
+        shards: []
+        # remote_execution.sharded_redis.username (string): Redis username
+        username: ""
+    task_size_model:
+        # remote_execution.task_size_model.enabled (bool): Whether to enable 
+        # model-based task size prediction.
+        enabled: false
+        # remote_execution.task_size_model.features_config_path (string): Path 
+        # pointing to features.json config file.
+        features_config_path: ""
+        # remote_execution.task_size_model.serving_address (string): gRPC 
+        # address pointing to TensorFlow Serving prediction service with task 
+        # size models (cpu, mem).
+        serving_address: ""
+    # remote_execution.use_measured_task_sizes (bool): Whether to use measured 
+    # usage stats to determine task sizes.
+    use_measured_task_sizes: false
+ssl:
+    # ssl.cert_file (string): Path to a PEM encoded certificate file to use 
+    # for TLS if not using ACME.
+    cert_file: ""
+    # ssl.client_ca_cert (string): PEM encoded certificate authority used to 
+    # issue client certificates for mTLS auth.
+    client_ca_cert: ""
+    # ssl.client_ca_cert_file (string): Path to a PEM encoded certificate 
+    # authority file used to issue client certificates for mTLS auth.
+    client_ca_cert_file: ""
+    # ssl.client_ca_key (string): PEM encoded certificate authority key used 
+    # to issue client certificates for mTLS auth.
+    client_ca_key: ""
+    # ssl.client_ca_key_file (string): Path to a PEM encoded certificate 
+    # authority key file used to issue client certificates for mTLS auth.
+    client_ca_key_file: ""
+    # ssl.client_cert_lifespan (time.Duration): The duration client 
+    # certificates are valid for. Ex: '730h' for one month. If not set, 
+    # defaults to 100 years.
+    client_cert_lifespan: 876000h0m0s
+    # ssl.default_host (string): Host name to use for ACME generated cert if 
+    # TLS request does not contain SNI.
+    default_host: ""
+    # ssl.enable_ssl (bool): Whether or not to enable SSL/TLS on gRPC 
+    # connections (gRPCS).
+    enable_ssl: false
+    # ssl.host_whitelist ([]string): Cloud-Only
+    host_whitelist: []
+    # ssl.key_file (string): Path to a PEM encoded key file to use for TLS if 
+    # not using ACME.
+    key_file: ""
+    # ssl.self_signed (bool): If true, a self-signed cert will be generated 
+    # for TLS termination.
+    self_signed: false
+    # ssl.upgrade_insecure (bool): True if http requests should be redirected 
+    # to https. Assumes http traffic is served on port 80 and https traffic is 
+    # served on port 443 (typically via an ingress / load balancer).
+    upgrade_insecure: false
+    # ssl.use_acme (bool): Whether or not to automatically configure SSL certs 
+    # using ACME. If ACME is enabled, cert_file and key_file should not be 
+    # set.
+    use_acme: false
+storage:
+    # storage.tempdir (string): Root directory for temporary files. Defaults 
+    # to the OS-specific temp dir.
+    tempdir: /tmp
+
+```

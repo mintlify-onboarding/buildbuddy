@@ -1,0 +1,80 @@
+{
+    "name": "BuildBuddy",
+    "logo": {
+      "light": "/logo/light.png",
+      "dark": "/logo/dark.png"
+    },
+    "favicon": "/favicon_black.svg",
+    "colors": {
+      "primary": "#0E0E0E",
+      "light": "#FAFAFA",
+      "dark": "#0E0E0E"
+    },
+    "modeToggle": {
+        "default": "light"
+    },
+    "topbarCtaButton": {
+      "name": "Get Started",
+      "url": "https://app.buildbuddy.io/"
+    },
+    "topbarLinks": [
+      {
+        "name": "Login",
+        "url": "https://app.buildbuddy.io/"
+      }
+    ],
+    "anchors": [
+      {
+        "name": "Community",
+        "icon": "slack",
+        "url": "http://community.buildbuddy.io/"
+      },      
+      {
+        "name": "GitHub",
+        "icon": "github",
+        "url": "https://github.com/buildbuddy-io/buildbuddy"
+      },
+      {
+        "name": "Blog",
+        "icon": "newspaper",
+        "url": "https://www.buildbuddy.io/blog/"
+      }   
+    ],
+    "navigation": [
+      {
+        "group": "Getting Started",
+        "pages": [
+            "introduction",
+            "cloud",
+            "on-prem",
+            "contributing"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides",
+          "guide-auth",
+          "guide-metadata"
+        ]
+      },
+      {
+        "group": "Cache",
+        "pages": [
+          "cache-encryption-keys"
+        ]
+      },
+      {
+        "group": "Remote Build Execution",
+        "pages": [
+          "remote-build-execution",
+          "rbe-setup"
+        ]
+      }
+    ],
+    "footerSocials":
+      {
+          "twitter": "https://twitter.com/buildbuddy_io",
+          "linkedin": "http://linkedin.com/company/buildbuddy"
+      }
+  }

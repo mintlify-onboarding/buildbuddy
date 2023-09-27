@@ -1,0 +1,1846 @@
+---
+title: "Prometheus MetricsBytes downloaded per secondSQL metrics"
+---
+
+BuildBuddy exposes [Prometheus](https://prometheus.io) metrics that allow monitoring the[four golden signals](https://landing.google.com/sre/sre-book/chapters/monitoring-distributed-systems/): latency, traffic, errors, and saturation.
+
+Prometheus metrics are exposed under the path `metrics/` on port `9090` by default.
+
+To view these metrics in a live-updating dashboard, we recommend using a tool like [Grafana](https://grafana.com).
+
+## Invocation build event metrics[](#invocation-build-event-metrics "Direct link to Invocation build event metrics")
+
+All invocation metrics are recorded at the _end_ of each invocation.
+
+### **`buildbuddy_invocation_count`** (Counter)[](#buildbuddy%5Finvocation%5Fcount-counter "Direct link to buildbuddy_invocation_count-counter")
+
+The total number of invocations whose logs were uploaded to BuildBuddy.
+
+#### Labels[](#labels "Direct link to Labels")
+
+* **invocation\_status**: Invocation status: `success`, `failure`, `disconnected`, or `unknown`.
+* **bazel\_exit\_code**: Exit code of a completed bazel command
+* **bazel\_command**: Command provided to the Bazel daemon: `run`, `test`, `build`, `coverage`, `mobile-install`, ...
+
+#### Examples[](#examples "Direct link to Examples")
+
+```
+# Number of invocations per second by invocation status
+sum by (invocation_status) (rate(buildbuddy_invocation_count[5m]))
+
+# Invocation success rate
+sum(rate(buildbuddy_invocation_count{invocation_status="success"}[5m]))
+/
+sum(rate(buildbuddy_invocation_count[5m]))
+
+```
+
+### **`buildbuddy_invocation_duration_usec`** (Histogram)[](#buildbuddy%5Finvocation%5Fduration%5Fusec-histogram "Direct link to buildbuddy_invocation_duration_usec-histogram")
+
+The total duration of each invocation, in **microseconds**.
+
+#### Labels[](#labels-1 "Direct link to Labels")
+
+* **invocation\_status**: Invocation status: `success`, `failure`, `disconnected`, or `unknown`.
+* **bazel\_command**: Command provided to the Bazel daemon: `run`, `test`, `build`, `coverage`, `mobile-install`, ...
+
+### **`buildbuddy_invocation_duration_usec_exported`** (Histogram)[](#buildbuddy%5Finvocation%5Fduration%5Fusec%5Fexported-histogram "Direct link to buildbuddy_invocation_duration_usec_exported-histogram")
+
+The total duration of each invocation, in **microseconds**.
+
+#### Labels[](#labels-2 "Direct link to Labels")
+
+* **invocation\_status**: Invocation status: `success`, `failure`, `disconnected`, or `unknown`.
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-1 "Direct link to Examples")
+
+```
+# Median invocation duration in the past 5 minutes
+histogram_quantile(
+0.5,
+sum(rate(buildbuddy_invocation_duration_usec_bucket[5m])) by (le)
+)
+
+```
+
+### **`buildbuddy_invocation_build_event_count`** (Counter)[](#buildbuddy%5Finvocation%5Fbuild%5Fevent%5Fcount-counter "Direct link to buildbuddy_invocation_build_event_count-counter")
+
+Number of [build events](https://docs.bazel.build/versions/master/build-event-protocol.html) uploaded to BuildBuddy.
+
+#### Labels[](#labels-3 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+
+#### Examples[](#examples-2 "Direct link to Examples")
+
+```
+# Build events uploaded per second
+sum(rate(buildbuddy_invocation_build_event_count[5m]))
+
+# Approximate error rate of build event upload handler
+sum(rate(buildbuddy_invocation_build_event_count{status="0"}[5m]))
+/
+sum(rate(buildbuddy_invocation_build_event_count[5m]))
+
+```
+
+### **`buildbuddy_invocation_stats_recorder_workers`** (Gauge)[](#buildbuddy%5Finvocation%5Fstats%5Frecorder%5Fworkers-gauge "Direct link to buildbuddy_invocation_stats_recorder_workers-gauge")
+
+Number of invocation stats recorder workers currently running.
+
+### **`buildbuddy_invocation_stats_recorder_duration_usec`** (Histogram)[](#buildbuddy%5Finvocation%5Fstats%5Frecorder%5Fduration%5Fusec-histogram "Direct link to buildbuddy_invocation_stats_recorder_duration_usec-histogram")
+
+How long it took to finalize an invocation's stats, in **microseconds**.
+
+This includes the time required to wait for all BuildBuddy apps to flush their local metrics to Redis (if applicable) and then record the metrics to the DB.
+
+### **`buildbuddy_invocation_webhook_invocation_lookup_workers`** (Gauge)[](#buildbuddy%5Finvocation%5Fwebhook%5Finvocation%5Flookup%5Fworkers-gauge "Direct link to buildbuddy_invocation_webhook_invocation_lookup_workers-gauge")
+
+Number of webhook invocation lookup workers currently running.
+
+### **`buildbuddy_invocation_webhook_invocation_lookup_duration_usec`** (Histogram)[](#buildbuddy%5Finvocation%5Fwebhook%5Finvocation%5Flookup%5Fduration%5Fusec-histogram "Direct link to buildbuddy_invocation_webhook_invocation_lookup_duration_usec-histogram")
+
+How long it took to lookup an invocation before posting to the webhook, in **microseconds**.
+
+### **`buildbuddy_invocation_webhook_notify_workers`** (Gauge)[](#buildbuddy%5Finvocation%5Fwebhook%5Fnotify%5Fworkers-gauge "Direct link to buildbuddy_invocation_webhook_notify_workers-gauge")
+
+Number of webhook notify workers currently running.
+
+### **`buildbuddy_invocation_webhook_notify_duration_usec`** (Histogram)[](#buildbuddy%5Finvocation%5Fwebhook%5Fnotify%5Fduration%5Fusec-histogram "Direct link to buildbuddy_invocation_webhook_notify_duration_usec-histogram")
+
+How long it took to post an invocation proto to the webhook, in **microseconds**.
+
+## Remote cache metrics[](#remote-cache-metrics "Direct link to Remote cache metrics")
+
+NOTE: Cache metrics are recorded at the end of each invocation, which means that these metrics provide _approximate_ real-time signals.
+
+### **`buildbuddy_remote_cache_events`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fevents-counter "Direct link to buildbuddy_remote_cache_events-counter")
+
+Number of cache events handled.
+
+#### Labels[](#labels-4 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **cache\_event\_type**: Cache event type: `hit`, `miss`, or `upload`.
+
+### **`buildbuddy_remote_cache_num_hits_exported`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fnum%5Fhits%5Fexported-counter "Direct link to buildbuddy_remote_cache_num_hits_exported-counter")
+
+Number of cache hits.
+
+#### Labels[](#labels-5 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **group\_id**: Group (organization) ID associated with the request.
+
+### **`buildbuddy_remote_cache_download_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fdownload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_cache_download_size_bytes-histogram")
+
+Number of bytes downloaded from the remote cache in each download.
+
+Use the **`_sum`** suffix to get the total downloaded bytes and the **`_count`** suffix to get the number of downloaded files.
+
+#### Labels[](#labels-6 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_remote_cache_download_size_bytes_exported`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fdownload%5Fsize%5Fbytes%5Fexported-counter "Direct link to buildbuddy_remote_cache_download_size_bytes_exported-counter")
+
+Number of bytes downloaded from the remote cache.
+
+#### Labels[](#labels-7 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-3 "Direct link to Examples")
+
+```
+# Cache download rate (bytes per second)
+sum(rate(buildbuddy_cache_download_size_bytes_sum[5m]))
+
+```
+
+### **`buildbuddy_remote_cache_download_duration_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fdownload%5Fduration%5Fusec-histogram "Direct link to buildbuddy_remote_cache_download_duration_usec-histogram")
+
+Download duration for each file downloaded from the remote cache, in **microseconds**.
+
+#### Labels[](#labels-8 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+
+#### Examples[](#examples-4 "Direct link to Examples")
+
+```
+# Median download duration for content-addressable store (CAS)
+histogram_quantile(
+0.5,
+sum(rate(buildbuddy_remote_cache_download_duration_usec{cache_type="cas"}[5m])) by (le)
+)
+
+```
+
+### **`buildbuddy_remote_cache_upload_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fupload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_cache_upload_size_bytes-histogram")
+
+Number of bytes uploaded to the remote cache in each upload.
+
+Use the **`_sum`** suffix to get the total uploaded bytes and the **`_count`** suffix to get the number of uploaded files.
+
+#### Labels[](#labels-9 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_remote_cache_upload_size_bytes_exported`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fupload%5Fsize%5Fbytes%5Fexported-counter "Direct link to buildbuddy_remote_cache_upload_size_bytes_exported-counter")
+
+Number of bytes uploaded to the remote cache
+
+#### Labels[](#labels-10 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-5 "Direct link to Examples")
+
+```
+# Cache upload rate (bytes per second)
+sum(rate(buildbuddy_cache_upload_size_bytes_sum[5m]))
+
+```
+
+### **`buildbuddy_remote_cache_upload_duration_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fupload%5Fduration%5Fusec-histogram "Direct link to buildbuddy_remote_cache_upload_duration_usec-histogram")
+
+Upload duration for each file uploaded to the remote cache, in **microseconds**.
+
+#### Labels[](#labels-11 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+
+#### Examples[](#examples-6 "Direct link to Examples")
+
+```
+# Median upload duration for content-addressable store (CAS)
+histogram_quantile(
+0.5,
+sum(rate(buildbuddy_remote_cache_upload_duration_usec{cache_type="cas"}[5m])) by (le)
+)
+
+```
+
+### **`buildbuddy_remote_cache_disk_cache_last_eviction_age_usec`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Flast%5Feviction%5Fage%5Fusec-gauge "Direct link to buildbuddy_remote_cache_disk_cache_last_eviction_age_usec-gauge")
+
+The age of the item most recently evicted from the cache, in **microseconds**.
+
+#### Labels[](#labels-12 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_eviction_age_msec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Feviction%5Fage%5Fmsec-histogram "Direct link to buildbuddy_remote_cache_disk_cache_eviction_age_msec-histogram")
+
+Age of items evicted from the cache, in **milliseconds**.
+
+#### Labels[](#labels-13 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_num_evictions`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fnum%5Fevictions-counter "Direct link to buildbuddy_remote_cache_disk_cache_num_evictions-counter")
+
+Number of items evicted.
+
+#### Labels[](#labels-14 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_partition_size_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fpartition%5Fsize%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_disk_cache_partition_size_bytes-gauge")
+
+Number of bytes in the partition.
+
+#### Labels[](#labels-15 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_partition_capacity_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fpartition%5Fcapacity%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_disk_cache_partition_capacity_bytes-gauge")
+
+Number of bytes in the partition.
+
+#### Labels[](#labels-16 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_partition_num_items`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fpartition%5Fnum%5Fitems-gauge "Direct link to buildbuddy_remote_cache_disk_cache_partition_num_items-gauge")
+
+Number of items in the partition.
+
+#### Labels[](#labels-17 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+
+### **`buildbuddy_remote_cache_disk_cache_duplicate_writes`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fduplicate%5Fwrites-counter "Direct link to buildbuddy_remote_cache_disk_cache_duplicate_writes-counter")
+
+Number of writes for digests that already exist.
+
+#### Labels[](#labels-18 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_added_file_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fadded%5Ffile%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_cache_disk_cache_added_file_size_bytes-histogram")
+
+Size of artifacts added to the file cache, in **bytes**.
+
+#### Labels[](#labels-19 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_filesystem_total_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Ffilesystem%5Ftotal%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_disk_cache_filesystem_total_bytes-gauge")
+
+Total size of the underlying filesystem.
+
+#### Labels[](#labels-20 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_disk_cache_filesystem_avail_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Ffilesystem%5Favail%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_disk_cache_filesystem_avail_bytes-gauge")
+
+Available bytes in the underlying filesystem.
+
+#### Labels[](#labels-21 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+#### Examples[](#examples-7 "Direct link to Examples")
+
+```
+# Total number of duplicate writes.
+sum(buildbuddy_remote_cache_duplicate_writes)
+
+```
+
+### **`buildbuddy_remote_cache_disk_cache_duplicate_writes_bytes`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fdisk%5Fcache%5Fduplicate%5Fwrites%5Fbytes-counter "Direct link to buildbuddy_remote_cache_disk_cache_duplicate_writes_bytes-counter")
+
+Number of bytes written that already existed in the cache.
+
+#### Labels[](#labels-22 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_migration_not_found_error_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fmigration%5Fnot%5Ffound%5Ferror%5Fcount-counter "Direct link to buildbuddy_remote_cache_migration_not_found_error_count-counter")
+
+Number of not found errors from the destination cache during a cache migration.
+
+#### Labels[](#labels-23 "Direct link to Labels")
+
+* **type**: Describes the type of cache request
+
+### **`buildbuddy_remote_cache_migration_double_read_hit_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fmigration%5Fdouble%5Fread%5Fhit%5Fcount-counter "Direct link to buildbuddy_remote_cache_migration_double_read_hit_count-counter")
+
+Number of double reads where the source and destination caches hold the same digests during a cache migration.
+
+#### Labels[](#labels-24 "Direct link to Labels")
+
+* **type**: Describes the type of cache request
+
+### **`buildbuddy_remote_cache_migration_copy_chan_size`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fmigration%5Fcopy%5Fchan%5Fsize-gauge "Direct link to buildbuddy_remote_cache_migration_copy_chan_size-gauge")
+
+Number of digests queued to be copied during a cache migration.
+
+### **`buildbuddy_remote_cache_migration_bytes_copied`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fmigration%5Fbytes%5Fcopied-counter "Direct link to buildbuddy_remote_cache_migration_bytes_copied-counter")
+
+Number of bytes copied from the source to destination cache during a cache migration.
+
+#### Labels[](#labels-25 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+
+### **`buildbuddy_remote_cache_migration_blobs_copied`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fmigration%5Fblobs%5Fcopied-counter "Direct link to buildbuddy_remote_cache_migration_blobs_copied-counter")
+
+Number of blobs copied from the source to destination cache during a cache migration.
+
+#### Labels[](#labels-26 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+
+### **`buildbuddy_remote_cache_tree_cache_lookup_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Ftree%5Fcache%5Flookup%5Fcount-counter "Direct link to buildbuddy_remote_cache_tree_cache_lookup_count-counter")
+
+Total number of TreeCache lookups.
+
+#### Labels[](#labels-27 "Direct link to Labels")
+
+* **status**: The TreeCache status: hit/miss/invalid\_entry.
+
+### **`buildbuddy_remote_cache_tree_cache_set_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Ftree%5Fcache%5Fset%5Fcount-counter "Direct link to buildbuddy_remote_cache_tree_cache_set_count-counter")
+
+Total number of TreeCache sets.
+
+## Remote execution metrics[](#remote-execution-metrics "Direct link to Remote execution metrics")
+
+### **`buildbuddy_remote_execution_count`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Fcount-counter "Direct link to buildbuddy_remote_execution_count-counter")
+
+Number of actions executed remotely.
+
+This only includes actions which reached the execution phase. If an action fails before execution (for example, if it fails authentication) then this metric is not incremented.
+
+#### Labels[](#labels-28 "Direct link to Labels")
+
+* **exit\_code**: Process exit code of an executed action.
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code) in human-readable format, such as "OK" or "NotFound".
+* **isolation**: Effective workload isolation type used for an executed task, such as "docker", "podman", "firecracker", or "none".
+
+#### Examples[](#examples-8 "Direct link to Examples")
+
+```
+# Total number of actions executed per second
+sum(rate(buildbuddy_remote_execution_count[5m]))
+
+```
+
+### **`buildbuddy_remote_execution_tasks_started_count`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Ftasks%5Fstarted%5Fcount-counter "Direct link to buildbuddy_remote_execution_tasks_started_count-counter")
+
+Number of tasks started remotely, but not necessarily completed.
+
+Includes retry attempts of the same task.
+
+### **`buildbuddy_remote_execution_executed_action_metadata_durations_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Fexecuted%5Faction%5Fmetadata%5Fdurations%5Fusec-histogram "Direct link to buildbuddy_remote_execution_executed_action_metadata_durations_usec-histogram")
+
+Time spent in each stage of action execution, in **microseconds**.
+
+Queries should filter or group by the `stage` label, taking care not to aggregate different stages.
+
+#### Labels[](#labels-29 "Direct link to Labels")
+
+* **stage**: Executed action stage. Action execution is split into stages corresponding to the timestamps defined in [ExecutedActionMetadata](https://github.com/buildbuddy-io/buildbuddy/blob/fb2e3a74083d82797926654409dc3858089d260b/proto/remote%5Fexecution.proto#L797): `queued`, `input_fetch`, `execution`, and `output_upload`. An additional stage, `worker`, includes all stages during which a worker is handling the action, which is all stages except the `queued` stage.
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-9 "Direct link to Examples")
+
+```
+# Median duration of all command stages
+histogram_quantile(
+0.5,
+sum(rate(buildbuddy_remote_execution_executed_action_metadata_durations_usec_bucket[5m])) by (le, stage)
+)
+
+# p90 duration of just the command execution stage
+histogram_quantile(
+0.9,
+sum(rate(buildbuddy_remote_execution_executed_action_metadata_durations_usec_bucket{stage="execution"}[5m])) by (le)
+)
+
+```
+
+### **`buildbuddy_remote_execution_task_size_read_requests`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Ftask%5Fsize%5Fread%5Frequests-counter "Direct link to buildbuddy_remote_execution_task_size_read_requests-counter")
+
+Number of read requests to the task sizer, which estimates action resource usage based on historical execution stats.
+
+#### Labels[](#labels-30 "Direct link to Labels")
+
+* **status**: Status of the task size read request: `hit`, `miss`, or `error`.
+* **isolation**: Effective workload isolation type used for an executed task, such as "docker", "podman", "firecracker", or "none".
+* **os**: OS associated with the request.
+* **arch**: CPU architecture associated with the request.
+* **group\_id**: Group (organization) ID associated with the request.
+
+### **`buildbuddy_remote_execution_task_size_write_requests`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Ftask%5Fsize%5Fwrite%5Frequests-counter "Direct link to buildbuddy_remote_execution_task_size_write_requests-counter")
+
+Number of write requests to the task sizer, which estimates action resource usage based on historical execution stats.
+
+#### Labels[](#labels-31 "Direct link to Labels")
+
+* **status**: Status of the task size write request: `ok`, `missing_stats` or `error`.
+* **isolation**: Effective workload isolation type used for an executed task, such as "docker", "podman", "firecracker", or "none".
+* **os**: OS associated with the request.
+* **arch**: CPU architecture associated with the request.
+* **group\_id**: Group (organization) ID associated with the request.
+
+### **`buildbuddy_remote_execution_task_size_prediction_duration_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ftask%5Fsize%5Fprediction%5Fduration%5Fusec-histogram "Direct link to buildbuddy_remote_execution_task_size_prediction_duration_usec-histogram")
+
+Task size prediction model request duration in **microseconds**.
+
+#### Labels[](#labels-32 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code) in human-readable format, such as "OK" or "NotFound".
+
+### **`buildbuddy_remote_execution_waiting_execution_result`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fwaiting%5Fexecution%5Fresult-gauge "Direct link to buildbuddy_remote_execution_waiting_execution_result-gauge")
+
+Number of execution requests for which the client is actively waiting for results.
+
+#### Labels[](#labels-33 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-10 "Direct link to Examples")
+
+```
+# Total number of execution requests with client waiting for result.
+sum(buildbuddy_remote_execution_waiting_execution_result)
+
+```
+
+### **`buildbuddy_remote_execution_requests`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Frequests-counter "Direct link to buildbuddy_remote_execution_requests-counter")
+
+Number of execution requests received.
+
+#### Labels[](#labels-34 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+* **os**: OS associated with the request.
+* **arch**: CPU architecture associated with the request.
+
+### **`buildbuddy_remote_execution_executor_registration_count`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Fexecutor%5Fregistration%5Fcount-counter "Direct link to buildbuddy_remote_execution_executor_registration_count-counter")
+
+Number of executor registrations on the scheduler.
+
+#### Labels[](#labels-35 "Direct link to Labels")
+
+* **version**: Binary version. Example: `v2.0.0`.
+
+#### Examples[](#examples-11 "Direct link to Examples")
+
+```
+# Rate of new execution requests by OS/Arch.
+sum(rate(buildbuddy_remote_execution_requests[1m])) by (os, arch)
+
+```
+
+### **`buildbuddy_remote_execution_merged_actions`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Fmerged%5Factions-counter "Direct link to buildbuddy_remote_execution_merged_actions-counter")
+
+Number of identical execution requests that have been merged.
+
+#### Labels[](#labels-36 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-12 "Direct link to Examples")
+
+```
+# Rate of merged actions by group.
+sum(rate(buildbuddy_remote_execution_merged_actions[1m])) by (group_id)
+
+```
+
+### **`buildbuddy_remote_execution_queue_length`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fqueue%5Flength-gauge "Direct link to buildbuddy_remote_execution_queue_length-gauge")
+
+Number of actions currently waiting in the executor queue.
+
+#### Labels[](#labels-37 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+
+#### Examples[](#examples-13 "Direct link to Examples")
+
+```
+# Median queue length across all executors
+quantile(0.5, buildbuddy_remote_execution_queue_length)
+
+```
+
+### **`buildbuddy_remote_execution_tasks_executing`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Ftasks%5Fexecuting-gauge "Direct link to buildbuddy_remote_execution_tasks_executing-gauge")
+
+Number of tasks currently being executed by the executor.
+
+#### Labels[](#labels-38 "Direct link to Labels")
+
+* **stage**: Executed action stage. Action execution is split into stages corresponding to the timestamps defined in [ExecutedActionMetadata](https://github.com/buildbuddy-io/buildbuddy/blob/fb2e3a74083d82797926654409dc3858089d260b/proto/remote%5Fexecution.proto#L797): `queued`, `input_fetch`, `execution`, and `output_upload`. An additional stage, `worker`, includes all stages during which a worker is handling the action, which is all stages except the `queued` stage.
+
+#### Examples[](#examples-14 "Direct link to Examples")
+
+```
+# Fraction of idle executors
+count_values(0, buildbuddy_remote_execution_tasks_executing)
+/
+count(buildbuddy_remote_execution_tasks_executing)
+
+```
+
+### **`buildbuddy_remote_execution_assigned_ram_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fassigned%5Fram%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_assigned_ram_bytes-gauge")
+
+Estimated RAM on the executor that is currently allocated for task execution, in **bytes**.
+
+### **`buildbuddy_remote_execution_assignable_ram_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fassignable%5Fram%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_assignable_ram_bytes-gauge")
+
+Maximum total RAM that can be allocated for task execution, in **bytes**.
+
+### **`buildbuddy_remote_execution_assigned_milli_cpu`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fassigned%5Fmilli%5Fcpu-gauge "Direct link to buildbuddy_remote_execution_assigned_milli_cpu-gauge")
+
+Estimated CPU time on the executor that is currently allocated for task execution, in **milliCPU** (CPU-milliseconds per second).
+
+### **`buildbuddy_remote_execution_assignable_milli_cpu`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fassignable%5Fmilli%5Fcpu-gauge "Direct link to buildbuddy_remote_execution_assignable_milli_cpu-gauge")
+
+Maximum total CPU time on the executor that can be allocated for task execution, in **milliCPU** (CPU-milliseconds per second).
+
+### **`buildbuddy_remote_execution_memory_usage_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fmemory%5Fusage%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_memory_usage_bytes-gauge")
+
+Current total task memory usage in **bytes**.
+
+This only accounts for tasks which are actively executing. To see memory usage of pooled runners, sum with runner pool memory usage.
+
+#### Examples[](#examples-15 "Direct link to Examples")
+
+```
+# Total approximate memory usage of active and pooled runners,
+# grouped by executor pod.
+sum by (pod_name) (
+buildbuddy_remote_execution_memory_usage_bytes
++ buildbuddy_remote_execution_runner_pool_memory_usage_bytes
+)
+
+```
+
+### **`buildbuddy_remote_execution_peak_memory_usage_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fpeak%5Fmemory%5Fusage%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_peak_memory_usage_bytes-gauge")
+
+Current total peak memory usage in **bytes**.
+
+This is the sum of the peak memory usage for all tasks currently executing. It is not a very useful metric on its own, and is mainly intended for comparison with `assigned_ram_bytes`.
+
+### **`buildbuddy_remote_execution_used_milli_cpu`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Fused%5Fmilli%5Fcpu-counter "Direct link to buildbuddy_remote_execution_used_milli_cpu-counter")
+
+Approximate cumulative CPU usage of executed tasks, in **CPU-milliseconds**.
+
+### **`buildbuddy_remote_execution_cpu_utilization_milli_cpu`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Fcpu%5Futilization%5Fmilli%5Fcpu-gauge "Direct link to buildbuddy_remote_execution_cpu_utilization_milli_cpu-gauge")
+
+Approximate current CPU utilization of tasks executing, in **milli-CPU** (CPU-milliseconds per second).
+
+This allows for much higher granularity than using a `rate()` on `used_milli_cpu` metric.
+
+### **`buildbuddy_remote_execution_file_download_count`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fdownload%5Fcount-histogram "Direct link to buildbuddy_remote_execution_file_download_count-histogram")
+
+Number of files downloaded during remote execution.
+
+### **`buildbuddy_remote_execution_file_download_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fdownload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_execution_file_download_size_bytes-histogram")
+
+Total number of bytes downloaded during remote execution.
+
+### **`buildbuddy_remote_execution_file_download_duration_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fdownload%5Fduration%5Fusec-histogram "Direct link to buildbuddy_remote_execution_file_download_duration_usec-histogram")
+
+Per-file download duration during remote execution, in **microseconds**.
+
+### **`buildbuddy_remote_execution_file_upload_count`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fupload%5Fcount-histogram "Direct link to buildbuddy_remote_execution_file_upload_count-histogram")
+
+Number of files uploaded during remote execution.
+
+### **`buildbuddy_remote_execution_file_upload_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fupload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_execution_file_upload_size_bytes-histogram")
+
+Total number of bytes uploaded during remote execution.
+
+### **`buildbuddy_remote_execution_file_upload_duration_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fupload%5Fduration%5Fusec-histogram "Direct link to buildbuddy_remote_execution_file_upload_duration_usec-histogram")
+
+Per-file upload duration during remote execution, in **microseconds**.
+
+### **`buildbuddy_firecracker_stage_duration_usec`** (Histogram)[](#buildbuddy%5Ffirecracker%5Fstage%5Fduration%5Fusec-histogram "Direct link to buildbuddy_firecracker_stage_duration_usec-histogram")
+
+The total duration of each firecracker stage, in microseconds
+
+#### Labels[](#labels-39 "Direct link to Labels")
+
+* **stage**: Generic label to describe the stage the metric is capturing
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code) in human-readable format, such as "OK" or "NotFound".
+* **recycled\_runner\_status**: For remote execution runners, describes the recycling status (Ex. 'clean' if the runner is not recycled or 'recycled')
+* **group\_id**: Group (organization) ID associated with the request.
+* **snapshot\_sharing\_status**: For firecracker remote execution runners, describes the snapshot sharing status (Ex. 'disabled' or 'local\_sharing\_enabled')
+
+#### Stage label values[](#stage-label-values "Direct link to Stage label values")
+
+* "init": Time for the VM to start up (either a new VM or from a snapshot)
+* "exec": Time to run the command inside the container
+* "task\_lifecycle": Time from when the task if first assigned to the VM (beginning of init) to after it's finished execution. This roughly represents what a customer will wait for the task to complete after it's been scheduled to a firecracker runner
+* "pause": Time to pause the VM, save a snapshot, and cleanup resources
+
+#### Examples[](#examples-16 "Direct link to Examples")
+
+```
+# P95 workflow lifecycle duration in the past 5 minutes, grouped by group_id
+histogram_quantile(
+0.95,
+sum by(le, group_id) (
+rate(buildbuddy_firecracker_stage_duration_msec_bucket{job="executor-workflows", stage="task_lifecycle"}[5m])
+)
+)
+
+```
+
+### **`buildbuddy_firecracker_cow_snapshot_dirty_chunk_ratio`** (Histogram)[](#buildbuddy%5Ffirecracker%5Fcow%5Fsnapshot%5Fdirty%5Fchunk%5Fratio-histogram "Direct link to buildbuddy_firecracker_cow_snapshot_dirty_chunk_ratio-histogram")
+
+After a copy-on-write snapshot has been used, the ratio of dirty/total chunks.
+
+#### Labels[](#labels-40 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+* **file\_name**: Name of a file.
+
+#### Examples[](#examples-17 "Direct link to Examples")
+
+```
+# To view how many elements fall into each bucket
+# Visualize with the Bar Gauge type
+# Legend: {{le}}
+# Format: Heatmap
+sum(buildbuddy_firecracker_cow_snapshot_dirty_chunk_ratio) by(le)
+
+```
+
+### **`buildbuddy_firecracker_cow_snapshot_dirty_bytes`** (Counter)[](#buildbuddy%5Ffirecracker%5Fcow%5Fsnapshot%5Fdirty%5Fbytes-counter "Direct link to buildbuddy_firecracker_cow_snapshot_dirty_bytes-counter")
+
+After a copy-on-write snapshot has been used, the total count of bytes dirtied.
+
+#### Labels[](#labels-41 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+* **file\_name**: Name of a file.
+
+### **`buildbuddy_remote_execution_recycle_runner_requests`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Frecycle%5Frunner%5Frequests-counter "Direct link to buildbuddy_remote_execution_recycle_runner_requests-counter")
+
+Number of execution requests with runner recycling enabled (via the platform property `recycle-runner=true`).
+
+#### Labels[](#labels-42 "Direct link to Labels")
+
+* **status**: Status of the recycle runner request: `hit` if the executor assigned a recycled runner to the action; `miss` otherwise.
+
+### **`buildbuddy_remote_execution_runner_pool_count`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Frunner%5Fpool%5Fcount-gauge "Direct link to buildbuddy_remote_execution_runner_pool_count-gauge")
+
+Number of command runners that are currently pooled (and available for recycling).
+
+### **`buildbuddy_remote_execution_runner_pool_evictions`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Frunner%5Fpool%5Fevictions-counter "Direct link to buildbuddy_remote_execution_runner_pool_evictions-counter")
+
+Number of command runners removed from the pool to make room for other runners.
+
+### **`buildbuddy_remote_execution_runner_pool_failed_recycle_attempts`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Frunner%5Fpool%5Ffailed%5Frecycle%5Fattempts-counter "Direct link to buildbuddy_remote_execution_runner_pool_failed_recycle_attempts-counter")
+
+Number of failed attempts to add runners to the pool.
+
+#### Labels[](#labels-43 "Direct link to Labels")
+
+* **reason**: Reason for a runner not being added to the runner pool.
+
+### **`buildbuddy_remote_execution_runner_pool_memory_usage_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Frunner%5Fpool%5Fmemory%5Fusage%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_runner_pool_memory_usage_bytes-gauge")
+
+Total memory usage of pooled command runners, in **bytes**.
+
+Currently only supported for Docker-based executors.
+
+### **`buildbuddy_remote_execution_runner_pool_disk_usage_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Frunner%5Fpool%5Fdisk%5Fusage%5Fbytes-gauge "Direct link to buildbuddy_remote_execution_runner_pool_disk_usage_bytes-gauge")
+
+Total disk usage of pooled command runners, in **bytes**.
+
+### **`buildbuddy_remote_execution_file_cache_requests`** (Counter)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fcache%5Frequests-counter "Direct link to buildbuddy_remote_execution_file_cache_requests-counter")
+
+Number of local executor file cache requests.
+
+#### Labels[](#labels-44 "Direct link to Labels")
+
+* **status**: Status of the file cache request: `hit` if found in cache, `miss` otherwise.
+
+### **`buildbuddy_remote_execution_file_cache_last_eviction_age_usec`** (Gauge)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fcache%5Flast%5Feviction%5Fage%5Fusec-gauge "Direct link to buildbuddy_remote_execution_file_cache_last_eviction_age_usec-gauge")
+
+Age of the last entry evicted from the executor's local file cache (relative to when it was added to the cache), in **microseconds**.
+
+### **`buildbuddy_remote_execution_file_cache_added_file_size_bytes`** (Histogram)[](#buildbuddy%5Fremote%5Fexecution%5Ffile%5Fcache%5Fadded%5Ffile%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_remote_execution_file_cache_added_file_size_bytes-histogram")
+
+Size of artifacts added to the file cache, in **bytes**.
+
+## Blobstore metrics[](#blobstore-metrics "Direct link to Blobstore metrics")
+
+"Blobstore" refers to the backing storage that BuildBuddy uses to store objects in the cache, as well as certain pieces of temporary data (such as invocation events while an invocation is in progress).
+
+### **`buildbuddy_blobstore_read_count`** (Counter)[](#buildbuddy%5Fblobstore%5Fread%5Fcount-counter "Direct link to buildbuddy_blobstore_read_count-counter")
+
+Number of files read from the blobstore.
+
+#### Labels[](#labels-45 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+### **`buildbuddy_blobstore_read_size_bytes`** (Histogram)[](#buildbuddy%5Fblobstore%5Fread%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_blobstore_read_size_bytes-histogram")
+
+Number of bytes read from the blobstore per file.
+
+#### Labels[](#labels-46 "Direct link to Labels")
+
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+sum(rate(buildbuddy\_blobstore\_read\_size\_bytes\[5m\]))
+
+```
+
+### **`buildbuddy_blobstore_read_duration_usec`** (Histogram)
+
+Duration per blobstore file read, in **microseconds**.
+
+#### Labels
+
+- **blobstore_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+### **`buildbuddy_blobstore_write_count`** (Counter)
+
+Number of files written to the blobstore.
+
+#### Labels
+
+- **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+- **blobstore_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+# Bytes uploaded per second
+sum(rate(buildbuddy_blobstore_write_size_bytes[5m]))
+
+```
+
+### **`buildbuddy_blobstore_write_size_bytes`** (Histogram)[](#buildbuddy%5Fblobstore%5Fwrite%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_blobstore_write_size_bytes-histogram")
+
+Number of bytes written to the blobstore per file.
+
+#### Labels[](#labels-47 "Direct link to Labels")
+
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+### **`buildbuddy_blobstore_write_duration_usec`** (Histogram)[](#buildbuddy%5Fblobstore%5Fwrite%5Fduration%5Fusec-histogram "Direct link to buildbuddy_blobstore_write_duration_usec-histogram")
+
+Duration per blobstore file write, in **microseconds**.
+
+#### Labels[](#labels-48 "Direct link to Labels")
+
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+### **`buildbuddy_blobstore_delete_count`** (Counter)[](#buildbuddy%5Fblobstore%5Fdelete%5Fcount-counter "Direct link to buildbuddy_blobstore_delete_count-counter")
+
+Number of files deleted from the blobstore.
+
+#### Labels[](#labels-49 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+### **`buildbuddy_blobstore_delete_duration_usec`** (Histogram)[](#buildbuddy%5Fblobstore%5Fdelete%5Fduration%5Fusec-histogram "Direct link to buildbuddy_blobstore_delete_duration_usec-histogram")
+
+Delete duration per blobstore file deletion, in **microseconds**.
+
+#### Labels[](#labels-50 "Direct link to Labels")
+
+* **blobstore\_type**: `gcs` (Google Cloud Storage), `aws_s3`, or `disk`.
+
+The following metrics are for monitoring the SQL database configured for BuildBuddy.
+
+If you'd like to see an up-to-date catalog of what BuildBuddy stores in its SQL database, see the table definitions [here](https://github.com/buildbuddy-io/buildbuddy/blob/master/server/tables/tables.go).
+
+## Query / error rate metrics[](#query--error-rate-metrics "Direct link to Query / error rate metrics")
+
+### **`buildbuddy_sql_query_count`** (Counter)[](#buildbuddy%5Fsql%5Fquery%5Fcount-counter "Direct link to buildbuddy_sql_query_count-counter")
+
+Number of SQL queries executed.
+
+#### Labels[](#labels-51 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+#### Examples[](#examples-18 "Direct link to Examples")
+
+```
+# SQL queries per second (by query template).
+sum by (sql_query_template) (rate(buildbuddy_sql_query_count[5m]))
+
+```
+
+### **`buildbuddy_sql_query_duration_usec`** (Histogram)[](#buildbuddy%5Fsql%5Fquery%5Fduration%5Fusec-histogram "Direct link to buildbuddy_sql_query_duration_usec-histogram")
+
+SQL query duration, in **microseconds**.
+
+#### Labels[](#labels-52 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+#### Examples[](#examples-19 "Direct link to Examples")
+
+```
+# Median SQL query duration
+histogram_quantile(
+0.5,
+sum(rate(buildbuddy_sql_query_duration_usec_bucket[5m])) by (le)
+)
+
+```
+
+### **`buildbuddy_sql_error_count`** (Counter)[](#buildbuddy%5Fsql%5Ferror%5Fcount-counter "Direct link to buildbuddy_sql_error_count-counter")
+
+Number of SQL queries that resulted in an error.
+
+#### Labels[](#labels-53 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+#### Examples[](#examples-20 "Direct link to Examples")
+
+```
+# SQL error rate
+sum(rate(buildbuddy_sql_error_count[5m]))
+/
+sum(rate(buildbuddy_sql_query_count[5m]))
+
+```
+
+## `database/sql` metrics[](#databasesql-metrics "Direct link to databasesql-metrics")
+
+The following metrics directly expose[DBStats](https://golang.org/pkg/database/sql/#DBStats) from the`database/sql` Go package.
+
+### **`buildbuddy_sql_max_open_connections`** (Gauge)[](#buildbuddy%5Fsql%5Fmax%5Fopen%5Fconnections-gauge "Direct link to buildbuddy_sql_max_open_connections-gauge")
+
+Maximum number of open connections to the database.
+
+#### Labels[](#labels-54 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_open_connections`** (Gauge)[](#buildbuddy%5Fsql%5Fopen%5Fconnections-gauge "Direct link to buildbuddy_sql_open_connections-gauge")
+
+The number of established connections to the database.
+
+#### Labels[](#labels-55 "Direct link to Labels")
+
+* **connection\_status**: Status of the database connection: `in_use` or `idle`
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_wait_count`** (Counter)[](#buildbuddy%5Fsql%5Fwait%5Fcount-counter "Direct link to buildbuddy_sql_wait_count-counter")
+
+The total number of connections waited for.
+
+#### Labels[](#labels-56 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_wait_duration_usec`** (Counter)[](#buildbuddy%5Fsql%5Fwait%5Fduration%5Fusec-counter "Direct link to buildbuddy_sql_wait_duration_usec-counter")
+
+The total time blocked waiting for a new connection, in **microseconds**.
+
+#### Labels[](#labels-57 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_max_idle_closed`** (Counter)[](#buildbuddy%5Fsql%5Fmax%5Fidle%5Fclosed-counter "Direct link to buildbuddy_sql_max_idle_closed-counter")
+
+The total number of connections closed due to SetMaxIdleConns.
+
+#### Labels[](#labels-58 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_max_idle_time_closed`** (Counter)[](#buildbuddy%5Fsql%5Fmax%5Fidle%5Ftime%5Fclosed-counter "Direct link to buildbuddy_sql_max_idle_time_closed-counter")
+
+The total number of connections closed due to SetConnMaxIdleTime.
+
+#### Labels[](#labels-59 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+### **`buildbuddy_sql_max_lifetime_closed`** (Counter)[](#buildbuddy%5Fsql%5Fmax%5Flifetime%5Fclosed-counter "Direct link to buildbuddy_sql_max_lifetime_closed-counter")
+
+The total number of connections closed due to SetConnMaxLifetime.
+
+#### Labels[](#labels-60 "Direct link to Labels")
+
+* **sql\_db\_role**: SQL DB replica role: `primary` for read+write replicas, or `read_replica` for read-only DB replicas.
+
+## HTTP metrics[](#http-metrics "Direct link to HTTP metrics")
+
+### **`buildbuddy_http_request_count`** (Counter)[](#buildbuddy%5Fhttp%5Frequest%5Fcount-counter "Direct link to buildbuddy_http_request_count-counter")
+
+HTTP request count.
+
+#### Labels[](#labels-61 "Direct link to Labels")
+
+* **route**: HTTP route before substituting path parameters (`/invocation/:id`, `/settings`, ...)
+* **method**: HTTP method: `GET`, `POST`, ...
+
+#### Examples[](#examples-21 "Direct link to Examples")
+
+```
+# Requests per second, by status code
+sum by (code) (rate(buildbuddy_http_request_count[5m]))
+
+# 5xx error ratio
+sum(rate(buildbuddy_http_request_count{code=~"5.."}[5m]))
+/
+sum(rate(buildbuddy_http_request_count[5m]))
+
+```
+
+### **`buildbuddy_http_request_handler_duration_usec`** (Histogram)[](#buildbuddy%5Fhttp%5Frequest%5Fhandler%5Fduration%5Fusec-histogram "Direct link to buildbuddy_http_request_handler_duration_usec-histogram")
+
+Time taken to handle each HTTP request in **microseconds**.
+
+#### Labels[](#labels-62 "Direct link to Labels")
+
+* **route**: HTTP route before substituting path parameters (`/invocation/:id`, `/settings`, ...)
+* **method**: HTTP method: `GET`, `POST`, ...
+* **code**: HTTP response code: `200`, `302`, `401`, `404`, `500`, ...
+
+#### Examples[](#examples-22 "Direct link to Examples")
+
+```
+# Median request duration for successfuly processed (2xx) requests.
+# Other status codes may be associated with early-exits and are
+# likely to add too much noise.
+histogram_quantile(
+0.5,
+sum by (le) (rate(buildbuddy_http_request_handler_duration_usec{code=~"2.."}[5m]))
+)
+
+```
+
+### **`buildbuddy_http_response_size_bytes`** (Histogram)[](#buildbuddy%5Fhttp%5Fresponse%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_http_response_size_bytes-histogram")
+
+Response size of each HTTP response in **bytes**.
+
+#### Labels[](#labels-63 "Direct link to Labels")
+
+* **route**: HTTP route before substituting path parameters (`/invocation/:id`, `/settings`, ...)
+* **method**: HTTP method: `GET`, `POST`, ...
+* **code**: HTTP response code: `200`, `302`, `401`, `404`, `500`, ...
+
+#### Examples[](#examples-23 "Direct link to Examples")
+
+```
+# Median HTTP response size
+histogram_quantile(
+0.5,
+sum by (le) (rate(buildbuddy_http_response_size_bytes[5m]))
+)
+
+```
+
+## Internal metrics[](#internal-metrics "Direct link to Internal metrics")
+
+These metrics are for monitoring lower-level subsystems of BuildBuddy.
+
+### Build event handler[](#build-event-handler "Direct link to Build event handler")
+
+The build event handler logs all build events uploaded to BuildBuddy as part of the Build Event Protocol.
+
+### **`buildbuddy_build_event_handler_duration_usec`** (Histogram)[](#buildbuddy%5Fbuild%5Fevent%5Fhandler%5Fduration%5Fusec-histogram "Direct link to buildbuddy_build_event_handler_duration_usec-histogram")
+
+The time spent handling each build event in **microseconds**.
+
+#### Labels[](#labels-64 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+
+### Webhooks[](#webhooks "Direct link to Webhooks")
+
+Webhooks are HTTP endpoints exposed by BuildBuddy server which allow it to respond to repository events. These URLs are created as part of BuildBuddy workflows.
+
+### **`buildbuddy_webhook_handler_workflows_started`** (Counter)[](#buildbuddy%5Fwebhook%5Fhandler%5Fworkflows%5Fstarted-counter "Direct link to buildbuddy_webhook_handler_workflows_started-counter")
+
+The number of workflows triggered by the webhook handler.
+
+#### Labels[](#labels-65 "Direct link to Labels")
+
+* **event**: Type of event sent to BuildBuddy's webhook handler: `push` or `pull_request`.
+
+### Cache[](#cache "Direct link to Cache")
+
+"Cache" refers to the cache backend(s) that BuildBuddy uses to accelerate file IO operations, which are common in different subsystems such as the remote cache and the fetch server (for downloading invocation artifacts).
+
+BuildBuddy can be configured to use multiple layers of caching (an in-memory layer, coupled with a cloud storage layer).
+
+#### `get` metrics[](#get-metrics "Direct link to get-metrics")
+
+`get` metrics track non-streamed cache reads (all data is fetched from the cache in a single request).
+
+### **`buildbuddy_cache_get_count`** (Counter)[](#buildbuddy%5Fcache%5Fget%5Fcount-counter "Direct link to buildbuddy_cache_get_count-counter")
+
+Number of cache get requests.
+
+#### Labels[](#labels-66 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_get_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fget%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_get_duration_usec-histogram")
+
+The time spent retrieving each entry from the cache, in **microseconds**.
+
+This is recorded only for successful gets.
+
+#### Labels[](#labels-67 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_get_size_bytes`** (Histogram)[](#buildbuddy%5Fcache%5Fget%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_cache_get_size_bytes-histogram")
+
+Size of each entry retrieved from the cache, in **bytes**.
+
+This is recorded only for successful gets.
+
+#### Labels[](#labels-68 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+#### `read` metrics[](#read-metrics "Direct link to read-metrics")
+
+`read` metrics track streamed cache reads.
+
+### **`buildbuddy_cache_read_count`** (Counter)[](#buildbuddy%5Fcache%5Fread%5Fcount-counter "Direct link to buildbuddy_cache_read_count-counter")
+
+Number of streamed cache reads started.
+
+This is incremented once for each started stream, **not** for each chunk in the stream.
+
+#### Labels[](#labels-69 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_read_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fread%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_read_duration_usec-histogram")
+
+The total time spent for each read stream, in **microseconds**.
+
+This is recorded only for successful reads, and measures the entire read stream (not just individual chunks).
+
+#### Labels[](#labels-70 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_read_size_bytes`** (Histogram)[](#buildbuddy%5Fcache%5Fread%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_cache_read_size_bytes-histogram")
+
+Total size of each entry retrieved from the cache via streaming, in **bytes**.
+
+This is recorded only on success, and measures the entire stream (not just individual chunks).
+
+#### Labels[](#labels-71 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+#### `set` metrics[](#set-metrics "Direct link to set-metrics")
+
+`set` metrics track non-streamed cache writes (all data is wrtiten in a single request).
+
+### **`buildbuddy_cache_set_count`** (Counter)[](#buildbuddy%5Fcache%5Fset%5Fcount-counter "Direct link to buildbuddy_cache_set_count-counter")
+
+Number of cache set requests.
+
+#### Labels[](#labels-72 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_set_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fset%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_set_duration_usec-histogram")
+
+The time spent writing each entry to the cache, in **microseconds**.
+
+This is recorded only for successful sets.
+
+#### Labels[](#labels-73 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_set_size_bytes`** (Histogram)[](#buildbuddy%5Fcache%5Fset%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_cache_set_size_bytes-histogram")
+
+Size of the value stored in each set operation, in **bytes**.
+
+This is recorded only for successful sets.
+
+#### Labels[](#labels-74 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_set_retries`** (Histogram)[](#buildbuddy%5Fcache%5Fset%5Fretries-histogram "Direct link to buildbuddy_cache_set_retries-histogram")
+
+Number of retries required to fulfill the set request (an observed value of 0 means the transfer succeeded on the first try).
+
+#### Labels[](#labels-75 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+#### `write` metrics[](#write-metrics "Direct link to write-metrics")
+
+`write` metrics track streamed cache writes.
+
+### **`buildbuddy_cache_write_count`** (Counter)[](#buildbuddy%5Fcache%5Fwrite%5Fcount-counter "Direct link to buildbuddy_cache_write_count-counter")
+
+Number of streamed cache writes started.
+
+This is incremented once for each started stream, **not** for each chunk in the stream.
+
+#### Labels[](#labels-76 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_write_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fwrite%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_write_duration_usec-histogram")
+
+The time spent for each streamed write to the cache, in **microseconds**.
+
+This is recorded only on success, and measures the entire stream (not just individual chunks).
+
+#### Labels[](#labels-77 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_write_size_bytes`** (Histogram)[](#buildbuddy%5Fcache%5Fwrite%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_cache_write_size_bytes-histogram")
+
+Size of each entry written to the cache via streaming, in **bytes**.
+
+This is recorded only on success, and measures the entire stream (not just individual chunks).
+
+#### Labels[](#labels-78 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_write_retries`** (Histogram)[](#buildbuddy%5Fcache%5Fwrite%5Fretries-histogram "Direct link to buildbuddy_cache_write_retries-histogram")
+
+Number of retries required to write each chunk in the stream (an observed value of 0 means the transfer succeeded on the first try).
+
+#### Labels[](#labels-79 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### Other cache metrics[](#other-cache-metrics "Direct link to Other cache metrics")
+
+### **`buildbuddy_cache_delete_count`** (Counter)[](#buildbuddy%5Fcache%5Fdelete%5Fcount-counter "Direct link to buildbuddy_cache_delete_count-counter")
+
+Number of deletes from the cache.
+
+#### Labels[](#labels-80 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_delete_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fdelete%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_delete_duration_usec-histogram")
+
+Duration of each cache deletion, in **microseconds**.
+
+#### Labels[](#labels-81 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_contains_count`** (Counter)[](#buildbuddy%5Fcache%5Fcontains%5Fcount-counter "Direct link to buildbuddy_cache_contains_count-counter")
+
+Number of `contains(key)` requests made to the cache.
+
+#### Labels[](#labels-82 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code). This is a numeric value; any non-zero code indicates an error.
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_contains_duration_usec`** (Histogram)[](#buildbuddy%5Fcache%5Fcontains%5Fduration%5Fusec-histogram "Direct link to buildbuddy_cache_contains_duration_usec-histogram")
+
+Duration of each each `contains(key)` request, in **microseconds**.
+
+#### Labels[](#labels-83 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### **`buildbuddy_cache_contains_retry_count`** (Histogram)[](#buildbuddy%5Fcache%5Fcontains%5Fretry%5Fcount-histogram "Direct link to buildbuddy_cache_contains_retry_count-histogram")
+
+Number of retries required to fulfill each `contains(key)` request to the cache (an observed value of 0 means the request succeeded on the first try).
+
+#### Labels[](#labels-84 "Direct link to Labels")
+
+* **tier**: Cache tier: `memory` or `cloud`. This label can be used to write Prometheus queries that don't break if the cache backend is swapped out for a different backend.
+* **backend**: Cache backend: `gcs` (Google Cloud Storage), `aws_s3`, or `redis`.
+
+### Misc metrics[](#misc-metrics "Direct link to Misc metrics")
+
+### **`buildbuddy_version`** (Gauge)[](#buildbuddy%5Fversion-gauge "Direct link to buildbuddy_version-gauge")
+
+Binary version of the running instance.
+
+Always reports a value of 1 similar to the `up` metric, but has a label containing the version.
+
+#### Labels[](#labels-85 "Direct link to Labels")
+
+* **version**: Binary version. Example: `v2.0.0`.
+
+### **`buildbuddy_unexpected_event`** (Counter)[](#buildbuddy%5Funexpected%5Fevent-counter "Direct link to buildbuddy_unexpected_event-counter")
+
+Counter for unexpected events.
+
+#### Labels[](#labels-86 "Direct link to Labels")
+
+* **name**: The name used to identify the type of an unexpected event.
+
+### **`buildbuddy_health_check_status`** (Gauge)[](#buildbuddy%5Fhealth%5Fcheck%5Fstatus-gauge "Direct link to buildbuddy_health_check_status-gauge")
+
+Health check status.
+
+#### Labels[](#labels-87 "Direct link to Labels")
+
+* **health\_check\_name**: Name of service the health check is running for (Ex "distributed\_cache" or "sql\_primary").
+
+### **`buildbuddy_quota_rpcs_handled_total_by_quota_key`** (Counter)[](#buildbuddy%5Fquota%5Frpcs%5Fhandled%5Ftotal%5Fby%5Fquota%5Fkey-counter "Direct link to buildbuddy_quota_rpcs_handled_total_by_quota_key-counter")
+
+Total number of RPCs completed on the server by quota\_key, regardless of success or failure.
+
+#### Labels[](#labels-88 "Direct link to Labels")
+
+* **grpc\_full\_method**: The full name of the grpc method: `/<service>/<method>`
+* **quota\_key**: The key used for quota accounting, either a group ID or an IP address.
+* **quota\_allowed**: Whether the request was allowed by quota manager.
+
+### **`buildbuddy_registry_blob_range_latency_usec`** (Histogram)[](#buildbuddy%5Fregistry%5Fblob%5Frange%5Flatency%5Fusec-histogram "Direct link to buildbuddy_registry_blob_range_latency_usec-histogram")
+
+Latency of serving layer blob ranges.
+
+### **`buildbuddy_clickhouse_insert_count`** (Counter)[](#buildbuddy%5Fclickhouse%5Finsert%5Fcount-counter "Direct link to buildbuddy_clickhouse_insert_count-counter")
+
+Num of rows inserted into ClickHouse
+
+#### Labels[](#labels-89 "Direct link to Labels")
+
+* **clickhouse\_table\_name**: The name of the table in Clickhouse
+* **status**: Status of the Clickhouse operation: `ok`, `error`.
+
+### **`buildbuddy_clickhouse_query_duration_usec`** (Histogram)[](#buildbuddy%5Fclickhouse%5Fquery%5Fduration%5Fusec-histogram "Direct link to buildbuddy_clickhouse_query_duration_usec-histogram")
+
+ClickHouse query duration, in **microseconds**.
+
+#### Labels[](#labels-90 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+### **`buildbuddy_clickhouse_error_count`** (Counter)[](#buildbuddy%5Fclickhouse%5Ferror%5Fcount-counter "Direct link to buildbuddy_clickhouse_error_count-counter")
+
+Number of ClickHouse SQL queries that resulted in an error.
+
+#### Labels[](#labels-91 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+### **`buildbuddy_clickhouse_query_count`** (Counter)[](#buildbuddy%5Fclickhouse%5Fquery%5Fcount-counter "Direct link to buildbuddy_clickhouse_query_count-counter")
+
+Number of ClickHouse SQL queries executed.
+
+#### Labels[](#labels-92 "Direct link to Labels")
+
+* **sql\_query\_template**: SQL query before substituting template parameters.
+
+### **`buildbuddy_compressor_bytes_compressed`** (Counter)[](#buildbuddy%5Fcompressor%5Fbytes%5Fcompressed-counter "Direct link to buildbuddy_compressor_bytes_compressed-counter")
+
+The number of decompressed bytes passed into compressors
+
+#### Labels[](#labels-93 "Direct link to Labels")
+
+* **compression**: Describes the type of compression
+
+### **`buildbuddy_compressor_bytes_decompressed`** (Counter)[](#buildbuddy%5Fcompressor%5Fbytes%5Fdecompressed-counter "Direct link to buildbuddy_compressor_bytes_decompressed-counter")
+
+The number of decompressed bytes passed out of decompressors
+
+#### Labels[](#labels-94 "Direct link to Labels")
+
+* **compression**: Describes the type of compression
+
+### **`buildbuddy_pebble_compression_ratio`** (Histogram)[](#buildbuddy%5Fpebble%5Fcompression%5Fratio-histogram "Direct link to buildbuddy_pebble_compression_ratio-histogram")
+
+The aggregate compression ratio (compressed / decompressed bytes) for a stream of data 
+
+#### Labels[](#labels-95 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+* **compression**: Describes the type of compression
+
+#### Examples[](#examples-24 "Direct link to Examples")
+
+```
+# Histogram buckets with the count of elements in each compression ratio bucket
+# Visualize with the Bar Gauge type
+# Legend: {{le}}
+# Format: Heatmap
+sum(buildbuddy_pebble_compression_ratio_bucket) by(le)
+
+# Percentage of elements that increased in size when compressed (compression ratio > 1)
+# Visualize with the Stat type
+(sum(buildbuddy_pebble_compression_ratio_count) - sum(buildbuddy_pebble_compression_ratio_bucket{le="1.0"})) / sum(buildbuddy_pebble_compression_ratio_count)
+
+```
+
+### **`buildbuddy_server_upload_size_bytes`** (Histogram)[](#buildbuddy%5Fserver%5Fupload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_server_upload_size_bytes-histogram")
+
+Number of bytes uploaded to the server in each upload.
+
+Use the **`_sum`** suffix to get the total uploaded bytes and the **`_count`** suffix to get the number of uploaded files.
+
+#### Labels[](#labels-96 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_server_uncompressed_upload_bytes_count`** (Counter)[](#buildbuddy%5Fserver%5Funcompressed%5Fupload%5Fbytes%5Fcount-counter "Direct link to buildbuddy_server_uncompressed_upload_bytes_count-counter")
+
+Number of uncompressed bytes uploaded to the server.
+
+#### Labels[](#labels-97 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+* **group\_id**: Group (organization) ID associated with the request.
+
+### **`buildbuddy_server_download_size_bytes`** (Histogram)[](#buildbuddy%5Fserver%5Fdownload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_server_download_size_bytes-histogram")
+
+Number of bytes downloaded from the server in each download.
+
+Use the **`_sum`** suffix to get the total downloaded bytes and the **`_count`** suffix to get the number of downloaded files.
+
+#### Labels[](#labels-98 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_server_uncompressed_download_bytes_count`** (Counter)[](#buildbuddy%5Fserver%5Funcompressed%5Fdownload%5Fbytes%5Fcount-counter "Direct link to buildbuddy_server_uncompressed_download_bytes_count-counter")
+
+Number of uncompressed bytes downloaded from the server.
+
+#### Labels[](#labels-99 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+* **group\_id**: Group (organization) ID associated with the request.
+
+### **`buildbuddy_server_digest_upload_size_bytes`** (Histogram)[](#buildbuddy%5Fserver%5Fdigest%5Fupload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_server_digest_upload_size_bytes-histogram")
+
+Digest size uploaded to the server in each upload.
+
+This does not always match the actual size uploaded to the server, if the client sends compressed bytes. Use the **`_sum`** suffix to get the total uploaded bytes and the **`_count`** suffix to get the number of uploaded files.
+
+#### Labels[](#labels-100 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_server_digest_download_size_bytes`** (Histogram)[](#buildbuddy%5Fserver%5Fdigest%5Fdownload%5Fsize%5Fbytes-histogram "Direct link to buildbuddy_server_digest_download_size_bytes-histogram")
+
+Digest size downloaded from the server in each download.
+
+This does not always match the actual size downloaded to the server, if the client requests compressed bytes. Use the **`_sum`** suffix to get the total downloaded bytes and the **`_count`** suffix to get the number of downloaded files.
+
+#### Labels[](#labels-101 "Direct link to Labels")
+
+* **cache\_type**: Cache type: `action` for action cache, `cas` for content-addressable storage.
+* **server\_name**: Describes the name of the server that handles a client request, such as "byte\_stream\_server" or "cas\_server"
+
+### **`buildbuddy_logger_log_count`** (Counter)[](#buildbuddy%5Flogger%5Flog%5Fcount-counter "Direct link to buildbuddy_logger_log_count-counter")
+
+The number of logs
+
+#### Labels[](#labels-102 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code) in human-readable format, such as "OK" or "NotFound".
+
+### Raft cache metrics[](#raft-cache-metrics "Direct link to Raft cache metrics")
+
+### **`buildbuddy_raft_ranges`** (Gauge)[](#buildbuddy%5Fraft%5Franges-gauge "Direct link to buildbuddy_raft_ranges-gauge")
+
+Number of raft ranges on each nodehost.
+
+#### Labels[](#labels-103 "Direct link to Labels")
+
+* **node\_host\_id**: The ID of a raft nodehost.
+
+### **`buildbuddy_raft_records`** (Gauge)[](#buildbuddy%5Fraft%5Frecords-gauge "Direct link to buildbuddy_raft_records-gauge")
+
+Number of raft records in each range.
+
+#### Labels[](#labels-104 "Direct link to Labels")
+
+* **range\_id**: The range ID of a raft region.
+
+### **`buildbuddy_raft_bytes`** (Gauge)[](#buildbuddy%5Fraft%5Fbytes-gauge "Direct link to buildbuddy_raft_bytes-gauge")
+
+Size (in bytes) of each range.
+
+#### Labels[](#labels-105 "Direct link to Labels")
+
+* **range\_id**: The range ID of a raft region.
+
+### **`buildbuddy_raft_proposals`** (Counter)[](#buildbuddy%5Fraft%5Fproposals-counter "Direct link to buildbuddy_raft_proposals-counter")
+
+The total number of statemachine proposals on each range.
+
+#### Labels[](#labels-106 "Direct link to Labels")
+
+* **range\_id**: The range ID of a raft region.
+
+### **`buildbuddy_raft_splits`** (Counter)[](#buildbuddy%5Fraft%5Fsplits-counter "Direct link to buildbuddy_raft_splits-counter")
+
+The total number of splits per nodehost.
+
+#### Labels[](#labels-107 "Direct link to Labels")
+
+* **node\_host\_id**: The ID of a raft nodehost.
+
+### **`buildbuddy_raft_moves`** (Counter)[](#buildbuddy%5Fraft%5Fmoves-counter "Direct link to buildbuddy_raft_moves-counter")
+
+The total number of moves per nodehost.
+
+#### Labels[](#labels-108 "Direct link to Labels")
+
+* **node\_host\_id**: The ID of a raft nodehost.
+* **move\_type**: The type of raft move `add`, or `remove`.
+
+### **`buildbuddy_raft_rangecache_lookups`** (Counter)[](#buildbuddy%5Fraft%5Frangecache%5Flookups-counter "Direct link to buildbuddy_raft_rangecache_lookups-counter")
+
+The total number of rangecache lookups per nodehost.
+
+#### Labels[](#labels-109 "Direct link to Labels")
+
+* **rangecache\_event\_type**: Raft RangeCache event type: `hit`, `miss`, or `update`.
+
+### **`buildbuddy_raft_split_duration_usec`** (Histogram)[](#buildbuddy%5Fraft%5Fsplit%5Fduration%5Fusec-histogram "Direct link to buildbuddy_raft_split_duration_usec-histogram")
+
+The time spent splitting a range in **microseconds**.
+
+#### Labels[](#labels-110 "Direct link to Labels")
+
+* **range\_id**: The range ID of a raft region.
+
+### **`buildbuddy_raft_eviction_age_msec`** (Histogram)[](#buildbuddy%5Fraft%5Feviction%5Fage%5Fmsec-histogram "Direct link to buildbuddy_raft_eviction_age_msec-histogram")
+
+Age of items evicted from the cache, in **milliseconds**.
+
+#### Labels[](#labels-111 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+
+### **`buildbuddy_auth_api_key_lookup_count`** (Counter)[](#buildbuddy%5Fauth%5Fapi%5Fkey%5Flookup%5Fcount-counter "Direct link to buildbuddy_auth_api_key_lookup_count-counter")
+
+Total number of API key lookups.
+
+#### Labels[](#labels-112 "Direct link to Labels")
+
+* **status**: Whether or not the API Key lookup hit the in memory cache or not: "cache\_hit", "cache\_miss" or "invalid\_key".
+
+### **`buildbuddy_auth_ip_rules_check_latency_usec`** (Histogram)[](#buildbuddy%5Fauth%5Fip%5Frules%5Fcheck%5Flatency%5Fusec-histogram "Direct link to buildbuddy_auth_ip_rules_check_latency_usec-histogram")
+
+Latency of IP authorization checks.
+
+#### Labels[](#labels-113 "Direct link to Labels")
+
+* **status**: Status code as defined by [grpc/codes](https://godoc.org/google.golang.org/grpc/codes#Code) in human-readable format, such as "OK" or "NotFound".
+
+### **`buildbuddy_encryption_key_refresh_count`** (Counter)[](#buildbuddy%5Fencryption%5Fkey%5Frefresh%5Fcount-counter "Direct link to buildbuddy_encryption_key_refresh_count-counter")
+
+Total number of encryption key refresh attempts.
+
+### **`buildbuddy_encryption_key_refresh_failure_count`** (Counter)[](#buildbuddy%5Fencryption%5Fkey%5Frefresh%5Ffailure%5Fcount-counter "Direct link to buildbuddy_encryption_key_refresh_failure_count-counter")
+
+Total number of unsuccessful encryption key refresh attempts.
+
+### **`buildbuddy_encryption_encrypted_block_count`** (Counter)[](#buildbuddy%5Fencryption%5Fencrypted%5Fblock%5Fcount-counter "Direct link to buildbuddy_encryption_encrypted_block_count-counter")
+
+Total number of blocks encrypted.
+
+### **`buildbuddy_encryption_encrypted_blob_count`** (Counter)[](#buildbuddy%5Fencryption%5Fencrypted%5Fblob%5Fcount-counter "Direct link to buildbuddy_encryption_encrypted_blob_count-counter")
+
+Total number of blobs encrypted.
+
+### **`buildbuddy_encryption_decrypted_block_count`** (Counter)[](#buildbuddy%5Fencryption%5Fdecrypted%5Fblock%5Fcount-counter "Direct link to buildbuddy_encryption_decrypted_block_count-counter")
+
+Total number of blocks decrypted.
+
+### **`buildbuddy_encryption_decrypted_blob_count`** (Counter)[](#buildbuddy%5Fencryption%5Fdecrypted%5Fblob%5Fcount-counter "Direct link to buildbuddy_encryption_decrypted_blob_count-counter")
+
+Total number of blobs decrypted.
+
+### **`buildbuddy_encryption_decryption_error_count`** (Counter)[](#buildbuddy%5Fencryption%5Fdecryption%5Ferror%5Fcount-counter "Direct link to buildbuddy_encryption_decryption_error_count-counter")
+
+Total number of decryption errors.
+
+### **`buildbuddy_encryption_key_last_encryption_age_msec`** (Histogram)[](#buildbuddy%5Fencryption%5Fkey%5Flast%5Fencryption%5Fage%5Fmsec-histogram "Direct link to buildbuddy_encryption_key_last_encryption_age_msec-histogram")
+
+Age of encrypted keys (i.e.
+
+how long it has been since the keys were re-encrypted).
+
+### **`buildbuddy_remote_cache_pebble_cache_atime_update_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fatime%5Fupdate%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_atime_update_count-counter")
+
+Count of processed atime updates.
+
+#### Labels[](#labels-114 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_eviction_resample_latency_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Feviction%5Fresample%5Flatency%5Fusec-histogram "Direct link to buildbuddy_remote_cache_pebble_cache_eviction_resample_latency_usec-histogram")
+
+Latency of resampling during a single eviction iteration.
+
+#### Labels[](#labels-115 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_eviction_evict_latency_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Feviction%5Fevict%5Flatency%5Fusec-histogram "Direct link to buildbuddy_remote_cache_pebble_cache_eviction_evict_latency_usec-histogram")
+
+Latency of evicting a single key.
+
+#### Labels[](#labels-116 "Direct link to Labels")
+
+* **partition\_id**: The ID of the disk cache partition this event applied to.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_compact_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fcompact%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_compact_count-counter")
+
+Number of compactions performed by the underlying Pebble database.
+
+#### Labels[](#labels-117 "Direct link to Labels")
+
+* **compaction\_type**: Pebble DB compaction type.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_compact_estimated_debt_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fcompact%5Festimated%5Fdebt%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_compact_estimated_debt_bytes-gauge")
+
+Estimated number of bytes that need to be compacted for the LMS to reach a stable state.
+
+#### Labels[](#labels-118 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_compact_in_progress_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fcompact%5Fin%5Fprogress%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_compact_in_progress_bytes-gauge")
+
+Number of bytes present in sstables being written by in-progress compactions.
+
+#### Labels[](#labels-119 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_compact_in_progress`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fcompact%5Fin%5Fprogress-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_compact_in_progress-gauge")
+
+Number of compactions that are in-progress
+
+#### Labels[](#labels-120 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_compact_marked_files`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fcompact%5Fmarked%5Ffiles-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_compact_marked_files-gauge")
+
+Count of files that are marked for compaction.
+
+#### Labels[](#labels-121 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_sublevels`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fsublevels-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_sublevels-gauge")
+
+Number of sublevels within the level.
+
+#### Labels[](#labels-122 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_num_files`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fnum%5Ffiles-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_num_files-gauge")
+
+The total number of files in the level.
+
+#### Labels[](#labels-123 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_size_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fsize%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_size_bytes-gauge")
+
+The total size in bytes of the files in the level.
+
+#### Labels[](#labels-124 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_score`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fscore-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_score-gauge")
+
+The level's compaction score.
+
+#### Labels[](#labels-125 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_in_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fin%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_in_count-counter")
+
+The number of incoming bytes from other levels read during compactions.
+
+This excludes bytes moved and bytes ingested. For L0 this is the bytes written to the WAL.
+
+#### Labels[](#labels-126 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_ingested_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fingested%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_ingested_count-counter")
+
+The number of bytes ingested.
+
+#### Labels[](#labels-127 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_moved_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fmoved%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_moved_count-counter")
+
+The number of bytes moved into the level by a move compaction.
+
+#### Labels[](#labels-128 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_read_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fread%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_read_count-counter")
+
+The number of bytes read for compactions at the level.
+
+This includes bytes read from other levels (BytesIn), as well as bytes read for the level.
+
+#### Labels[](#labels-129 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_compacted_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fcompacted%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_compacted_count-counter")
+
+The number of bytes written during compactions.
+
+#### Labels[](#labels-130 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_flushed_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Fbytes%5Fflushed%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_bytes_flushed_count-counter")
+
+The number of bytes written during flushes.
+
+#### Labels[](#labels-131 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_tables_compacted_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Ftables%5Fcompacted%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_tables_compacted_count-counter")
+
+The number of sstables compacted to this level.
+
+#### Labels[](#labels-132 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_tables_flushed_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Ftables%5Fflushed%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_tables_flushed_count-counter")
+
+The number of sstables flushed to this level.
+
+#### Labels[](#labels-133 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_tables_ingested_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Ftables%5Fingested%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_tables_ingested_count-counter")
+
+The number of sstables ingested into this level.
+
+#### Labels[](#labels-134 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_level_tables_moved_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Flevel%5Ftables%5Fmoved%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_level_tables_moved_count-counter")
+
+The number of sstables ingested into to this level.
+
+#### Labels[](#labels-135 "Direct link to Labels")
+
+* **level**: Pebble DB level number.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_op_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fop%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_op_count-counter")
+
+The number of operations performed against the pebble database.
+
+#### Labels[](#labels-136 "Direct link to Labels")
+
+* **pebble\_id**: Pebble DB ID
+* **pebble\_op**: Pebble DB operation type.
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_op_latency_usec`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fop%5Flatency%5Fusec-histogram "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_op_latency_usec-histogram")
+
+The latency of operations performed against the pebble database, in microseconds.
+
+#### Labels[](#labels-137 "Direct link to Labels")
+
+* **pebble\_id**: Pebble DB ID
+* **pebble\_op**: Pebble DB operation type.
+
+### **`buildbuddy_remote_cache_pebble_cache_pebble_block_cache_size_bytes`** (Gauge)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fpebble%5Fblock%5Fcache%5Fsize%5Fbytes-gauge "Direct link to buildbuddy_remote_cache_pebble_cache_pebble_block_cache_size_bytes-gauge")
+
+The total size in pebble's block cache.
+
+#### Labels[](#labels-138 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_groupid_sample_count`** (Counter)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fgroupid%5Fsample%5Fcount-counter "Direct link to buildbuddy_remote_cache_pebble_cache_groupid_sample_count-counter")
+
+The number of times a group has been selected for key sampling.
+
+#### Labels[](#labels-139 "Direct link to Labels")
+
+* **group\_id**: Group (organization) ID associated with the request.
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+### **`buildbuddy_remote_cache_pebble_cache_num_chunks_per_file`** (Histogram)[](#buildbuddy%5Fremote%5Fcache%5Fpebble%5Fcache%5Fnum%5Fchunks%5Fper%5Ffile-histogram "Direct link to buildbuddy_remote_cache_pebble_cache_num_chunks_per_file-histogram")
+
+Number of chunks per file stored in pebble cache
+
+#### Labels[](#labels-140 "Direct link to Labels")
+
+* **cache\_name**: Cache name: Custom name to describe the cache, like "pebble-cache".
+
+## Podman metrics[](#podman-metrics "Direct link to Podman metrics")
+
+### **`buildbuddy_podman_soci_store_crash_count`** (Counter)[](#buildbuddy%5Fpodman%5Fsoci%5Fstore%5Fcrash%5Fcount-counter "Direct link to buildbuddy_podman_soci_store_crash_count-counter")
+
+Total number of times the soci store binary crashed and was restarted.
+
+### **`buildbuddy_podman_get_soci_artifacts_latency_usec`** (Histogram)[](#buildbuddy%5Fpodman%5Fget%5Fsoci%5Fartifacts%5Flatency%5Fusec-histogram "Direct link to buildbuddy_podman_get_soci_artifacts_latency_usec-histogram")
+
+The latency of retrieving SOCI artifacts from the app and storing them locally per image, in microseconds.
+
+Note this is slightly different than the latency of the GetArtifacts RPC as the artifacts must be fetched from the cache and stored locally, which adds some additional time.
+
+#### Labels[](#labels-141 "Direct link to Labels")
+
+* **container\_image\_tag**: Container image tag.
+
+### **`buildbuddy_podman_get_soci_artifacts_outcome`** (Counter)[](#buildbuddy%5Fpodman%5Fget%5Fsoci%5Fartifacts%5Foutcome-counter "Direct link to buildbuddy_podman_get_soci_artifacts_outcome-counter")
+
+The outcome (cached or reason why not) of SociArtifactStore.GetArtifacts RPCs.
+
+#### Labels[](#labels-142 "Direct link to Labels")
+
+* **get\_soci\_artifacts\_outcome\_tag**: SociArtifactStore.GetArtifacts outcome tag.
+
+### **`buildbuddy_podman_image_pull_latency_msec`** (Histogram)[](#buildbuddy%5Fpodman%5Fimage%5Fpull%5Flatency%5Fmsec-histogram "Direct link to buildbuddy_podman_image_pull_latency_msec-histogram")
+
+The latency of 'cold' podman pull requests per image, in milliseconds.
+
+'Cold' means the image hasn't been pulled by this executor previously.
+
+#### Labels[](#labels-143 "Direct link to Labels")
+
+* **container\_image\_tag**: Container image tag.

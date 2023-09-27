@@ -1,0 +1,31 @@
+---
+title: "Database Configuration"
+---
+
+## Section[](#section "Direct link to Section")
+
+`database:` The database section configures the database that BuildBuddy stores metadata in. **Required**
+
+## Options[](#options "Direct link to Options")
+
+**Required**
+
+* `data_source` This is a connection string used by the database driver to connect to the database. MySQL and SQLite databases are supported.
+
+## Example sections[](#example-sections "Direct link to Example sections")
+
+### SQLite[](#sqlite "Direct link to SQLite")
+
+```
+database:
+  data_source: "sqlite3:///tmp/buildbuddy.db"
+
+```
+
+### MySQL[](#mysql "Direct link to MySQL")
+
+```
+database:
+  data_source: "mysql://buildbuddy_user:pAsSwOrD@tcp(12.34.56.78)/buildbuddy_db"
+
+```
